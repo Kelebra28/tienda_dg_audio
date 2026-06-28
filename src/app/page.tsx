@@ -1,5 +1,5 @@
 import { ProductCard } from "@/components/molecules/ProductCard";
-import { Product } from "@/types/product.types";
+import { Product } from "@prisma/client";
 import { Button } from "@/components/atoms/Button";
 import prisma from "@/lib/prisma";
 

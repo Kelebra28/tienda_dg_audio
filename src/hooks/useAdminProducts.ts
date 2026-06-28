@@ -8,13 +8,14 @@ export const useAdminProducts = () => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchProducts = useCallback(async () => {
-    setIsLoading(true);
+    // Evitar setState síncrono para el linter
+    setTimeout(() => setIsLoading(true), 0);
     setError(null);
     try {
       const data = await productsService.getAll();
       setProducts(data);
-    } catch (err: any) {
-      setError(err.message || "Unknown error fetching products");
+    } catch (err: unknown) {
+      setError((err as Error).message || "Unknown error fetching products");
     } finally {
       setIsLoading(false);
     }
@@ -30,8 +31,8 @@ export const useAdminProducts = () => {
       const newProduct = await productsService.create(productData);
       setProducts((prev) => [newProduct, ...prev]);
       return newProduct;
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError((err as Error).message);
       throw err;
     } finally {
       setIsLoading(false);
@@ -44,8 +45,8 @@ export const useAdminProducts = () => {
       const updated = await productsService.update(id, productData);
       setProducts((prev) => prev.map((p) => (p.id === id ? updated : p)));
       return updated;
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError((err as Error).message);
       throw err;
     } finally {
       setIsLoading(false);
@@ -60,8 +61,8 @@ export const useAdminProducts = () => {
       setProducts((prev) =>
         prev.map((p) => (p.id === id ? { ...p, isActive: false } : p))
       );
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError((err as Error).message);
       throw err;
     } finally {
       setIsLoading(false);

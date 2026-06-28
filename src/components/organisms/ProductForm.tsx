@@ -26,7 +26,7 @@ export const ProductForm = ({ initialData, onSubmit, onCancel }: ProductFormProp
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     
-    let parsedValue: any = value;
+    let parsedValue: string | number | boolean = value;
     if (type === "number") {
       parsedValue = value === "" ? "" : Number(value);
     } else if (type === "checkbox") {
@@ -126,7 +126,9 @@ export const ProductForm = ({ initialData, onSubmit, onCancel }: ProductFormProp
         <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 500 }}>Imagen del Producto</label>
         {imagePreview && (
           <div style={{ marginBottom: "1rem" }}>
-            <img src={imagePreview} alt="Preview" style={{ maxWidth: "200px", borderRadius: "8px", border: "1px solid #ccc" }} />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img 
+                src={imagePreview} alt="Preview" style={{ maxWidth: "200px", borderRadius: "8px", border: "1px solid #ccc" }} />
           </div>
         )}
         <input type="file" accept="image/*" onChange={handleFileChange} style={inputStyle} />
