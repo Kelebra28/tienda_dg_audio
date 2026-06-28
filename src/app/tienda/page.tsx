@@ -8,6 +8,7 @@ export const metadata: Metadata = {
 };
 
 const prisma = new PrismaClient();
+export const dynamic = 'force-dynamic';
 
 export default async function TiendaPage() {
   const products = await prisma.product.findMany({

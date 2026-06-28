@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
+import sharp from "sharp";
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,28 +13,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (file.size > 5 * 1024 * 1024) {
+      return NextResponse.json(
+        { success: false, message: "El archivo excede los 5MB permitidos" },
+        { status: 400 }
+      );
+    }
+
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Generar nombre único
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const originalName = file.name.replace(/\s+/g, "-");
-    const filename = `${uniqueSuffix}-${originalName}`;
+    // Procesar la imagen con sharp
+    // - Resize a max 800x800, sin agrandar si es más pequeña (withoutEnlargement)
+    // - Convertir a WebP con calidad 75%
+    const processedBuffer = await sharp(buffer)
+      .resize({
+        width: 800,
+        height: 800,
+        fit: "inside",
+        withoutEnlargement: true,
+      })
+      .webp({ quality: 75 })
+      .toBuffer();
 
-    // Asegurar que el directorio exista
-    const uploadDir = join(process.cwd(), "public", "uploads");
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true });
-    }
+    // Convertir a cadena Base64
+    const base64String = `data:image/webp;base64,${processedBuffer.toString("base64")}`;
 
-    const path = join(uploadDir, filename);
-    await writeFile(path, buffer);
-
-    return NextResponse.json({ success: true, url: `/uploads/${filename}` });
+    // Devolver el string Base64 para guardarlo en la DB
+    return NextResponse.json({ success: true, base64: base64String });
   } catch (error) {
     console.error("Upload error:", error);
     return NextResponse.json(
-      { success: false, message: "Error subiendo el archivo" },
+      { success: false, message: "Error procesando la imagen" },
       { status: 500 }
     );
   }

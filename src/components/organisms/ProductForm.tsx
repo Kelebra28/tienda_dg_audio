@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Product } from "@/types/product.types";
 import { Button } from "@/components/atoms/Button";
-import imageCompression from "browser-image-compression";
+import { useImageUpload } from "@/hooks/useImageUpload";
 
 interface ProductFormProps {
   initialData?: Partial<Product>;
@@ -36,13 +36,33 @@ export const ProductForm = ({ initialData, onSubmit, onCancel }: ProductFormProp
     setFormData((prev) => ({ ...prev, [name]: parsedValue }));
   };
 
+  const [isDragging, setIsDragging] = useState(false);
+
+  const validateAndSetFile = (file: File) => {
+    // 1. Validar tamaño (Max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("El archivo es demasiado grande. Máximo 5MB.");
+      return;
+    }
+    
+    // 2. Validar tipo
+    const validTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      alert("Formato no soportado. Solo JPG, PNG o WEBP.");
+      return;
+    }
+
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
+      validateAndSetFile(e.target.files[0]);
     }
   };
+
+  const { uploadImage, isUploading } = useImageUpload();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,29 +71,12 @@ export const ProductForm = ({ initialData, onSubmit, onCancel }: ProductFormProp
       let finalImageUrl = formData.imageUrl;
 
       if (imageFile) {
-        // 1. Comprimir la imagen
-        const options = {
-          maxSizeMB: 1,
-          maxWidthOrHeight: 1024,
-          useWebWorker: true,
-        };
-        const compressedFile = await imageCompression(imageFile, options);
-
-        // 2. Subir al servidor local
-        const uploadData = new FormData();
-        uploadData.append("file", compressedFile);
-
-        const response = await fetch("/api/upload", {
-          method: "POST",
-          body: uploadData,
-        });
-
-        const result = await response.json();
-        if (result.success) {
-          finalImageUrl = result.url;
+        const base64Url = await uploadImage(imageFile);
+        if (base64Url) {
+          finalImageUrl = base64Url;
         } else {
-          alert("Error subiendo la imagen");
-          return;
+          setIsSubmitting(false);
+          return; // El hook ya muestra el alert si hay error
         }
       }
 
@@ -124,14 +127,66 @@ export const ProductForm = ({ initialData, onSubmit, onCancel }: ProductFormProp
 
       <div>
         <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 500 }}>Imagen del Producto</label>
-        {imagePreview && (
-          <div style={{ marginBottom: "1rem" }}>
+        
+        <div 
+          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setIsDragging(false);
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+              validateAndSetFile(e.dataTransfer.files[0]);
+            }
+          }}
+          style={{
+            border: `2px dashed ${isDragging ? 'var(--color-primary)' : '#ccc'}`,
+            borderRadius: '12px',
+            padding: '2rem',
+            textAlign: 'center',
+            backgroundColor: isDragging ? 'rgba(0,0,0,0.02)' : 'transparent',
+            transition: 'all 0.2s ease',
+            cursor: 'pointer',
+            position: 'relative'
+          }}
+          onClick={() => document.getElementById('image-upload')?.click()}
+        >
+          {imagePreview ? (
+            <div style={{ position: 'relative', display: 'inline-block' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img 
-                src={imagePreview} alt="Preview" style={{ maxWidth: "200px", borderRadius: "8px", border: "1px solid #ccc" }} />
-          </div>
-        )}
-        <input type="file" accept="image/*" onChange={handleFileChange} style={inputStyle} />
+              <img src={imagePreview} alt="Preview" style={{ maxWidth: "200px", borderRadius: "8px", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }} />
+              <button 
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setImageFile(null);
+                  setImagePreview("");
+                }}
+                style={{
+                  position: 'absolute', top: '-10px', right: '-10px',
+                  background: 'var(--color-danger, #ef4444)', color: 'white',
+                  border: 'none', borderRadius: '50%', width: '24px', height: '24px',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          ) : (
+            <div>
+              <div style={{ fontSize: '2rem', marginBottom: '1rem', color: '#888' }}>☁️</div>
+              <p style={{ margin: 0, fontWeight: 500 }}>Arrastra una imagen o haz clic para subir</p>
+              <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '0.5rem' }}>Formatos: JPG, PNG, WEBP (Max 5MB)</p>
+            </div>
+          )}
+          <input 
+            id="image-upload" 
+            type="file" 
+            accept="image/jpeg, image/png, image/webp" 
+            onChange={handleFileChange} 
+            style={{ display: 'none' }} 
+          />
+        </div>
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "2rem" }}>

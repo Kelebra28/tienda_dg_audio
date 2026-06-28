@@ -2,6 +2,7 @@ import { ProductCard } from "@/components/molecules/ProductCard";
 import { Product } from "@prisma/client";
 import { Button } from "@/components/atoms/Button";
 import prisma from "@/lib/prisma";
+export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
   // Obtenemos los productos reales de la base de datos que estén activos
