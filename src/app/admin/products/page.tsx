@@ -5,10 +5,11 @@ import { useAdminProducts } from "@/hooks/useAdminProducts";
 import { Product } from "@/types/product.types";
 import { Button } from "@/components/atoms/Button";
 import { ProductForm } from "@/components/organisms/ProductForm";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, EyeOff } from "lucide-react";
+import toast from "react-hot-toast";
 
 export default function AdminProductsPage() {
-  const { products, isLoading, error, addProduct, updateProduct, deleteProduct } = useAdminProducts();
+  const { products, isLoading, error, addProduct, updateProduct, toggleProductStatus, hardDeleteProduct } = useAdminProducts();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
@@ -23,22 +24,83 @@ export default function AdminProductsPage() {
   };
 
   const handleSubmit = async (data: Partial<Product>) => {
-    if (editingProduct) {
-      await updateProduct(editingProduct.id, data);
-    } else {
-      await addProduct(data);
+    const action = editingProduct 
+      ? updateProduct(editingProduct.id, data) 
+      : addProduct(data);
+      
+    toast.promise(action, {
+      loading: editingProduct ? "Actualizando producto..." : "Guardando producto...",
+      success: editingProduct ? "Producto actualizado correctamente" : "Producto creado correctamente",
+      error: (err) => err.message || "Error al guardar el producto"
+    });
+
+    try {
+      await action;
+      handleCloseForm();
+    } catch (e) {
+      // Error manejado por toast
     }
-    handleCloseForm();
+  };
+
+  const handleToggleStatus = async (id: string, currentStatus: boolean) => {
+    toast.promise(toggleProductStatus(id, currentStatus), {
+      loading: currentStatus ? "Deshabilitando..." : "Habilitando...",
+      success: currentStatus ? "Producto deshabilitado (oculto)" : "Producto habilitado (visible)",
+      error: (err) => err.message || "Error al cambiar estado"
+    });
+  };
+
+  const confirmDelete = (id: string, name: string) => {
+    toast((t) => (
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <p style={{ margin: 0, fontWeight: 500 }}>¿Eliminar permanentemente <b>{name}</b>?</p>
+        <p style={{ margin: 0, fontSize: "0.85rem", color: "#666" }}>Esta acción no se puede deshacer.</p>
+        <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
+          <button 
+            onClick={() => toast.dismiss(t.id)}
+            style={{ padding: "0.25rem 0.75rem", borderRadius: "4px", border: "1px solid #ccc", background: "white", cursor: "pointer" }}
+          >
+            Cancelar
+          </button>
+          <button 
+            onClick={() => {
+              toast.dismiss(t.id);
+              handleDelete(id);
+            }}
+            style={{ padding: "0.25rem 0.75rem", borderRadius: "4px", border: "none", background: "#ef4444", color: "white", cursor: "pointer" }}
+          >
+            Eliminar Físicamente
+          </button>
+        </div>
+      </div>
+    ), { duration: 5000 });
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm("¿Estás seguro de eliminar (desactivar) este producto?")) {
-      await deleteProduct(id);
-    }
+    toast.promise(hardDeleteProduct(id), {
+      loading: "Eliminando producto...",
+      success: "Producto eliminado permanentemente",
+      error: (err) => err.message || "Error al eliminar"
+    });
   };
 
   if (isLoading && products.length === 0) {
-    return <div>Cargando productos...</div>;
+    return (
+      <div style={{ padding: "2rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <div style={{ width: "200px", height: "40px", background: "#f0f0f0", borderRadius: "8px", animation: "pulse 1.5s infinite" }} />
+          <div style={{ width: "150px", height: "40px", background: "#f0f0f0", borderRadius: "8px", animation: "pulse 1.5s infinite" }} />
+        </div>
+        <div style={{ width: "100%", height: "400px", background: "#f0f0f0", borderRadius: "12px", animation: "pulse 1.5s infinite" }} />
+        <style>{`
+          @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+          }
+        `}</style>
+      </div>
+    );
   }
 
   return (
@@ -104,15 +166,22 @@ export default function AdminProductsPage() {
                   <td style={{ padding: "1rem", textAlign: "right" }}>
                     <button 
                       onClick={() => handleOpenForm(product)}
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-accent)", marginRight: "1rem" }}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-accent)", marginRight: "0.75rem" }}
                       title="Editar"
                     >
                       <Edit size={20} />
                     </button>
                     <button 
-                      onClick={() => handleDelete(product.id)}
+                      onClick={() => handleToggleStatus(product.id, product.isActive)}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: product.isActive ? "#666" : "#2e7d32", marginRight: "0.75rem" }}
+                      title={product.isActive ? "Deshabilitar" : "Habilitar"}
+                    >
+                      {product.isActive ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                    <button 
+                      onClick={() => confirmDelete(product.id, product.name)}
                       style={{ background: "none", border: "none", cursor: "pointer", color: "#c62828" }}
-                      title="Eliminar"
+                      title="Eliminar permanentemente"
                     >
                       <Trash2 size={20} />
                     </button>

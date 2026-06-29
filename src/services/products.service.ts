@@ -35,11 +35,14 @@ export const productsService = {
     return response.json();
   },
 
-  async softDelete(id: string): Promise<{ success: boolean; product: Product }> {
+  async hardDelete(id: string): Promise<{ success: boolean; product: Product }> {
     const response = await fetch(`${API_URL}/${id}`, {
       method: "DELETE",
     });
-    if (!response.ok) throw new Error("Failed to delete product");
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.error || "Failed to delete product");
+    }
     return response.json();
   },
 };

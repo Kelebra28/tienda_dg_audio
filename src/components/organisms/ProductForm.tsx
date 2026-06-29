@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Product } from "@/types/product.types";
 import { Button } from "@/components/atoms/Button";
 import { useImageUpload } from "@/hooks/useImageUpload";
+import toast from "react-hot-toast";
 
 interface ProductFormProps {
   initialData?: Partial<Product>;
@@ -39,16 +40,14 @@ export const ProductForm = ({ initialData, onSubmit, onCancel }: ProductFormProp
   const [isDragging, setIsDragging] = useState(false);
 
   const validateAndSetFile = (file: File) => {
-    // 1. Validar tamaño (Max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert("El archivo es demasiado grande. Máximo 5MB.");
+      toast.error("El archivo es demasiado grande. Máximo 5MB.");
       return;
     }
     
-    // 2. Validar tipo
     const validTypes = ["image/jpeg", "image/png", "image/webp"];
     if (!validTypes.includes(file.type)) {
-      alert("Formato no soportado. Solo JPG, PNG o WEBP.");
+      toast.error("Formato no soportado. Solo JPG, PNG o WEBP.");
       return;
     }
 
@@ -83,7 +82,7 @@ export const ProductForm = ({ initialData, onSubmit, onCancel }: ProductFormProp
       await onSubmit({ ...formData, imageUrl: finalImageUrl });
     } catch (error) {
       console.error("Error al guardar:", error);
-      alert("Ocurrió un error al guardar el producto");
+      toast.error("Ocurrió un error al guardar el producto");
     } finally {
       setIsSubmitting(false);
     }

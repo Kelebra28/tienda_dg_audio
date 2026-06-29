@@ -4,6 +4,7 @@ import { Footer } from "@/components/organisms/Footer";
 import { Providers } from "@/components/providers";
 import { CartProvider } from "@/context/CartContext";
 import { CartDrawer } from "@/components/organisms/CartDrawer";
+import { Toaster } from "react-hot-toast";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -23,6 +24,7 @@ export default function RootLayout({
           <CartProvider>
             <Navbar />
             <CartDrawer />
+            <Toaster position="bottom-right" />
             <main style={{ paddingTop: "80px", minHeight: "calc(100vh - 300px)" }}>
               {children}
             </main>

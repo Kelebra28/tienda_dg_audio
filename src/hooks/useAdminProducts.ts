@@ -53,14 +53,25 @@ export const useAdminProducts = () => {
     }
   };
 
-  const deleteProduct = async (id: string) => {
+  const toggleProductStatus = async (id: string, currentStatus: boolean) => {
     setIsLoading(true);
     try {
-      await productsService.softDelete(id);
-      // Soft delete: lo actualizamos en la UI
-      setProducts((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, isActive: false } : p))
-      );
+      const updated = await productsService.update(id, { isActive: !currentStatus });
+      setProducts((prev) => prev.map((p) => (p.id === id ? updated : p)));
+    } catch (err: unknown) {
+      setError((err as Error).message);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const hardDeleteProduct = async (id: string) => {
+    setIsLoading(true);
+    try {
+      await productsService.hardDelete(id);
+      // Hard delete: lo removemos completamente de la UI
+      setProducts((prev) => prev.filter((p) => p.id !== id));
     } catch (err: unknown) {
       setError((err as Error).message);
       throw err;
@@ -76,6 +87,7 @@ export const useAdminProducts = () => {
     fetchProducts,
     addProduct,
     updateProduct,
-    deleteProduct,
+    toggleProductStatus,
+    hardDeleteProduct,
   };
 };

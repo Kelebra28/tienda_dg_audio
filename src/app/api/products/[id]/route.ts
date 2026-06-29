@@ -59,15 +59,24 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    // Eliminación lógica (soft delete) en lugar de borrarlo físico para no romper órdenes pasadas
-    const deletedProduct = await prisma.product.update({
+    
+    // Eliminación física
+    const deletedProduct = await prisma.product.delete({
       where: { id },
-      data: { isActive: false },
     });
 
     return NextResponse.json({ success: true, product: deletedProduct });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error deleting product:", error);
+    
+    // Error típico de Prisma cuando hay registros relacionados (Foreign Key Constraint)
+    if (error.code === 'P2003') {
+      return NextResponse.json(
+        { error: "No se puede borrar este producto porque ya tiene ventas (órdenes) asociadas. En su lugar, usa el botón de 'Deshabilitar' para ocultarlo de la tienda." }, 
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json({ error: "Failed to delete product" }, { status: 500 });
   }
 }

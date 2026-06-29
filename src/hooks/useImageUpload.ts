@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 
 export const useImageUpload = () => {
   const [isUploading, setIsUploading] = useState(false);
@@ -41,7 +42,7 @@ export const useImageUpload = () => {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "Error desconocido";
       setError(errorMessage);
-      alert(errorMessage);
+      toast.error(errorMessage);
       return null;
     } finally {
       setIsUploading(false);
