@@ -8,18 +8,23 @@ datasource db {
 }
 
 model Product {
-  id          String      @id @default(uuid())
-  name        String
-  description String
-  price       Float
-  stock       Int         @default(0)
-  category    String?
-  brand       String?
-  imageUrl    String?     @db.LongText
-  isActive    Boolean     @default(true)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  orderItems  OrderItem[]
+  id              String      @id @default(uuid())
+  name            String
+  description     String      @db.Text
+  priceWithoutIva Float       @default(0)
+  price           Float       // Price with IVA
+  stock           Int         @default(0)
+  category        String?
+  brand           String?
+  family          String?
+  subcategory     String?
+  model           String?
+  currency        String?     @default("MXN")
+  imageUrl        String?     @db.LongText
+  isActive        Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  orderItems      OrderItem[]
 }
 
 model Order {
@@ -57,3 +62,8 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+ 
+// Falta datos para facturaxcion
+// rf 
+// rs
+// cocepto

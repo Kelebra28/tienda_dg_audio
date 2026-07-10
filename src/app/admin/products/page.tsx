@@ -1,17 +1,20 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useAdminProducts } from "@/hooks/useAdminProducts";
 import { Product } from "@/types/product.types";
 import { Button } from "@/components/atoms/Button";
 import { ProductForm } from "@/components/organisms/ProductForm";
-import { Plus, Edit, Trash2, Eye, EyeOff } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, EyeOff, Upload } from "lucide-react";
 import toast from "react-hot-toast";
+import Papa from "papaparse";
 
 export default function AdminProductsPage() {
   const { products, isLoading, error, addProduct, updateProduct, toggleProductStatus, hardDeleteProduct } = useAdminProducts();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleOpenForm = (product?: Product) => {
     setEditingProduct(product || null);
@@ -21,6 +24,63 @@ export default function AdminProductsPage() {
   const handleCloseForm = () => {
     setIsFormOpen(false);
     setEditingProduct(null);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const loadingToast = toast.loading("Procesando archivo CSV...");
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        try {
+          const mappedProducts = results.data.map((row: any) => {
+            const costoSinIva = parseFloat(row.Costo_Original_sin_IVA) || 0;
+            return {
+              name: row.Producto_Comercial || "Sin Nombre",
+              description: row.Descripcion_Corta || "",
+              priceWithoutIva: costoSinIva,
+              price: costoSinIva * 1.16,
+              stock: 0,
+              category: row.Categoria || null,
+              brand: row.Marca || null,
+              family: row.Familia_Catalogo || null,
+              subcategory: row.Subcategoria || null,
+              model: row.Modelo || null,
+              currency: row.Moneda_Final || "MXN",
+              isActive: true,
+            };
+          });
+
+          toast.loading("Subiendo productos al servidor...", { id: loadingToast });
+
+          const response = await fetch('/api/products/bulk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(mappedProducts)
+          });
+
+          const resData = await response.json();
+          if (!response.ok) throw new Error(resData.error);
+
+          toast.success(`Se importaron ${resData.count} productos exitosamente`, { id: loadingToast });
+          window.location.reload();
+        } catch (err: any) {
+          toast.error(`Error: ${err.message}`, { id: loadingToast });
+          setIsUploading(false);
+          if (fileInputRef.current) fileInputRef.current.value = "";
+        }
+      },
+      error: (error: any) => {
+        toast.error(`Error al leer el archivo: ${error.message}`, { id: loadingToast });
+        setIsUploading(false);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
+    });
   };
 
   const handleSubmit = async (data: Partial<Product>) => {
@@ -107,10 +167,27 @@ export default function AdminProductsPage() {
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
         <h1 className="section-title" style={{ margin: 0, fontSize: "2rem" }}>Gestión de Productos</h1>
-        <Button onClick={() => handleOpenForm()} style={{ display: "flex", gap: "0.5rem" }}>
-          <Plus size={20} />
-          Nuevo Producto
-        </Button>
+        <div style={{ display: "flex", gap: "1rem" }}>
+          <input 
+            type="file" 
+            accept=".csv" 
+            style={{ display: 'none' }} 
+            ref={fileInputRef} 
+            onChange={handleFileUpload} 
+          />
+          <Button 
+            onClick={() => fileInputRef.current?.click()} 
+            disabled={isUploading}
+            style={{ display: "flex", gap: "0.5rem", backgroundColor: "var(--bg-secondary)", color: "var(--text-primary)", border: "1px solid var(--border-color)" }}
+          >
+            <Upload size={20} />
+            {isUploading ? "Subiendo..." : "Importar CSV"}
+          </Button>
+          <Button onClick={() => handleOpenForm()} style={{ display: "flex", gap: "0.5rem" }} disabled={isUploading}>
+            <Plus size={20} />
+            Nuevo Producto
+          </Button>
+        </div>
       </div>
 
       {error && (
