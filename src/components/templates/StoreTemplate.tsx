@@ -13,42 +13,66 @@ interface StoreTemplateProps {
   categories: string[];
   brands: string[];
   families: string[];
-  currentPage: number;
-  totalPages: number;
-  totalCount: number;
 }
 
 export const StoreTemplate: React.FC<StoreTemplateProps> = ({ 
   products, 
   categories, 
   brands, 
-  families, 
-  currentPage, 
-  totalPages, 
-  totalCount 
+  families
 }) => {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const deferredSearchTerm = React.useDeferredValue(searchTerm);
+  const [currentCategory, setCurrentCategory] = React.useState<string | null>(null);
+  const [currentBrand, setCurrentBrand] = React.useState<string | null>(null);
+  const [currentFamily, setCurrentFamily] = React.useState<string | null>(null);
+  const [currentSort, setCurrentSort] = React.useState<string>('');
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const ITEMS_PER_PAGE = 24;
 
-  // Helper function to update URL params
-  const updateParams = useCallback((key: string, value: string | null) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (value === null) {
-      params.delete(key);
-    } else {
-      params.set(key, value);
-    }
-    // Always reset to page 1 when changing filters, unless we are explicitly changing the page
-    if (key !== 'page') {
-      params.set('page', '1');
-    }
-    router.push(`?${params.toString()}`);
-  }, [searchParams, router]);
+  // Reset page when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [deferredSearchTerm, currentCategory, currentBrand, currentFamily, currentSort]);
 
-  const currentCategory = searchParams.get('category');
-  const currentBrand = searchParams.get('brand');
-  const currentFamily = searchParams.get('family');
-  const currentSort = searchParams.get('sort') || '';
+  const filteredProducts = React.useMemo(() => {
+    let filtered = products;
+
+    if (currentCategory) {
+      filtered = filtered.filter(p => p.category === currentCategory);
+    }
+    if (currentBrand) {
+      filtered = filtered.filter(p => p.brand === currentBrand);
+    }
+    if (currentFamily) {
+      filtered = filtered.filter(p => p.family === currentFamily);
+    }
+    if (deferredSearchTerm) {
+      const lower = deferredSearchTerm.toLowerCase();
+      filtered = filtered.filter(p => 
+        (p.name && String(p.name).toLowerCase().includes(lower)) ||
+        (p.description && String(p.description).toLowerCase().includes(lower)) ||
+        (p.model && String(p.model).toLowerCase().includes(lower))
+      );
+    }
+
+    if (currentSort === 'price_asc') {
+      filtered = [...filtered].sort((a, b) => a.price - b.price);
+    } else if (currentSort === 'price_desc') {
+      filtered = [...filtered].sort((a, b) => b.price - a.price);
+    } else if (currentSort === 'name_asc') {
+      filtered = [...filtered].sort((a, b) => String(a.name).localeCompare(String(b.name)));
+    }
+
+    return filtered;
+  }, [products, currentCategory, currentBrand, currentFamily, deferredSearchTerm, currentSort]);
+
+  const totalCount = filteredProducts.length;
+  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   // Animation variants
   const containerVariants: Variants = {
@@ -74,28 +98,51 @@ export const StoreTemplate: React.FC<StoreTemplateProps> = ({
           <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>Filtros</h2>
         </div>
 
+        {/* Search */}
+        <div className={styles.filterGroup}>
+          <h3 className={styles.filterTitle}>Buscar</h3>
+          <div style={{ position: 'relative' }}>
+            <input
+              type="text"
+              placeholder="Buscar productos..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '0.75rem 1rem 0.75rem 2.5rem',
+                borderRadius: '8px',
+                border: '1px solid #e5e7eb',
+                fontSize: '0.875rem',
+                outline: 'none',
+                boxSizing: 'border-box'
+              }}
+            />
+            <Search size={18} color="#9ca3af" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
+          </div>
+        </div>
+
         {/* Categories */}
         {categories.length > 0 && (
           <div className={styles.filterGroup}>
             <h3 className={styles.filterTitle}>Categoría</h3>
             <div className={styles.filterList}>
-              <label className={`${styles.filterLabel} ${!currentCategory ? styles.active : ""}`}>
-                <input 
-                  type="radio" 
-                  checked={!currentCategory}
-                  onChange={() => updateParams('category', null)}
-                  style={{ display: 'none' }}
-                />
-                Todas las categorías
-              </label>
-              {categories.map(cat => (
-                <label key={cat} className={`${styles.filterLabel} ${currentCategory === cat ? styles.active : ""}`}>
+                <label className={`${styles.filterLabel} ${!currentCategory ? styles.active : ""}`}>
                   <input 
                     type="radio" 
-                    checked={currentCategory === cat}
-                    onChange={() => updateParams('category', cat)}
+                    checked={!currentCategory}
+                    onChange={() => setCurrentCategory(null)}
                     style={{ display: 'none' }}
                   />
+                  Todas las categorías
+                </label>
+                {categories.map(cat => (
+                  <label key={cat} className={`${styles.filterLabel} ${currentCategory === cat ? styles.active : ""}`}>
+                    <input 
+                      type="radio" 
+                      checked={currentCategory === cat}
+                      onChange={() => setCurrentCategory(cat)}
+                      style={{ display: 'none' }}
+                    />
                   {cat}
                 </label>
               ))}
@@ -112,7 +159,7 @@ export const StoreTemplate: React.FC<StoreTemplateProps> = ({
                 <input 
                   type="radio" 
                   checked={!currentBrand}
-                  onChange={() => updateParams('brand', null)}
+                  onChange={() => setCurrentBrand(null)}
                   style={{ display: 'none' }}
                 />
                 Todas las marcas
@@ -122,7 +169,7 @@ export const StoreTemplate: React.FC<StoreTemplateProps> = ({
                   <input 
                     type="radio" 
                     checked={currentBrand === brand}
-                    onChange={() => updateParams('brand', brand)}
+                    onChange={() => setCurrentBrand(brand)}
                     style={{ display: 'none' }}
                   />
                   {brand}
@@ -141,7 +188,7 @@ export const StoreTemplate: React.FC<StoreTemplateProps> = ({
                 <input 
                   type="radio" 
                   checked={!currentFamily}
-                  onChange={() => updateParams('family', null)}
+                  onChange={() => setCurrentFamily(null)}
                   style={{ display: 'none' }}
                 />
                 Todas las familias
@@ -151,7 +198,7 @@ export const StoreTemplate: React.FC<StoreTemplateProps> = ({
                   <input 
                     type="radio" 
                     checked={currentFamily === family}
-                    onChange={() => updateParams('family', family)}
+                    onChange={() => setCurrentFamily(family)}
                     style={{ display: 'none' }}
                   />
                   {family}
@@ -161,10 +208,16 @@ export const StoreTemplate: React.FC<StoreTemplateProps> = ({
           </div>
         )}
 
-        {(currentCategory || currentBrand || currentFamily) && (
+        {(currentCategory || currentBrand || currentFamily || searchTerm) && (
           <button 
             className={styles.clearFiltersBtn}
-            onClick={() => router.push('/tienda')}
+            onClick={() => {
+              setSearchTerm('');
+              setCurrentCategory(null);
+              setCurrentBrand(null);
+              setCurrentFamily(null);
+              setCurrentSort('');
+            }}
           >
             Limpiar todos los filtros
           </button>
@@ -181,7 +234,7 @@ export const StoreTemplate: React.FC<StoreTemplateProps> = ({
             <label style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: 500 }}>Ordenar por:</label>
             <select 
               value={currentSort}
-              onChange={(e) => updateParams('sort', e.target.value || null)}
+              onChange={(e) => setCurrentSort(e.target.value)}
               className={styles.sortSelect}
             >
               <option value="">Más recientes</option>
@@ -192,7 +245,7 @@ export const StoreTemplate: React.FC<StoreTemplateProps> = ({
           </div>
         </div>
 
-        {products.length > 0 ? (
+        {paginatedProducts.length > 0 ? (
           <>
             <motion.div 
               key={currentPage + (currentCategory || '') + (currentBrand || '') + currentSort} // Force re-animation on filter/page change
@@ -201,7 +254,7 @@ export const StoreTemplate: React.FC<StoreTemplateProps> = ({
               animate="show"
               className={styles.productsGrid}
             >
-              {products.map(product => (
+              {paginatedProducts.map(product => (
                 <motion.div key={product.id} variants={itemVariants}>
                   <ProductCard product={product} />
                 </motion.div>
@@ -213,7 +266,10 @@ export const StoreTemplate: React.FC<StoreTemplateProps> = ({
               <div className={styles.pagination}>
                 <button 
                   disabled={currentPage <= 1}
-                  onClick={() => updateParams('page', String(currentPage - 1))}
+                  onClick={() => {
+                    setCurrentPage(prev => Math.max(prev - 1, 1));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                   className={styles.pageBtn}
                 >
                   <ChevronLeft size={20} /> Anterior
@@ -223,7 +279,10 @@ export const StoreTemplate: React.FC<StoreTemplateProps> = ({
                 </div>
                 <button 
                   disabled={currentPage >= totalPages}
-                  onClick={() => updateParams('page', String(currentPage + 1))}
+                  onClick={() => {
+                    setCurrentPage(prev => Math.min(prev + 1, totalPages));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                   className={styles.pageBtn}
                 >
                   Siguiente <ChevronRight size={20} />
@@ -245,7 +304,13 @@ export const StoreTemplate: React.FC<StoreTemplateProps> = ({
               Intenta cambiar o quitar algunos filtros de búsqueda para ver más resultados.
             </p>
             <button 
-              onClick={() => router.push('/tienda')}
+              onClick={() => {
+                setSearchTerm('');
+                setCurrentCategory(null);
+                setCurrentBrand(null);
+                setCurrentFamily(null);
+                setCurrentSort('');
+              }}
               style={{
                 marginTop: '2rem',
                 padding: '0.75rem 1.5rem',

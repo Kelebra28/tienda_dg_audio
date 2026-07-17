@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useDeferredValue, useEffect } from "react";
 import { useAdminProducts } from "@/hooks/useAdminProducts";
 import { Product } from "@/types/product.types";
 import { Button } from "@/components/atoms/Button";
 import { ProductForm } from "@/components/organisms/ProductForm";
-import { Plus, Edit, Trash2, Eye, EyeOff, Upload } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, EyeOff, Upload, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import toast from "react-hot-toast";
 import Papa from "papaparse";
 
@@ -14,7 +14,16 @@ export default function AdminProductsPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const deferredSearchTerm = useDeferredValue(searchTerm);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 50;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [deferredSearchTerm]);
 
   const handleOpenForm = (product?: Product) => {
     setEditingProduct(product || null);
@@ -163,11 +172,46 @@ export default function AdminProductsPage() {
     );
   }
 
+  const filteredProducts = products.filter(p => {
+    if (!deferredSearchTerm) return true;
+    const searchLower = String(deferredSearchTerm).toLowerCase();
+    return (
+      (p.name && String(p.name).toLowerCase().includes(searchLower)) ||
+      (p.description && String(p.description).toLowerCase().includes(searchLower)) ||
+      (p.model && String(p.model).toLowerCase().includes(searchLower))
+    );
+  });
+
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
         <h1 className="section-title" style={{ margin: 0, fontSize: "2rem" }}>Gestión de Productos</h1>
-        <div style={{ display: "flex", gap: "1rem" }}>
+        
+        <div style={{ display: "flex", gap: "1rem", flex: 1, justifyContent: "flex-end", alignItems: "center" }}>
+          <div style={{ position: "relative", maxWidth: "300px", width: "100%", marginRight: "1rem" }}>
+            <input
+              type="text"
+              placeholder="Buscar productos..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "0.5rem 1rem 0.5rem 2.5rem",
+                borderRadius: "8px",
+                border: "1px solid var(--border-color)",
+                boxSizing: "border-box",
+                outline: "none"
+              }}
+            />
+            <Search size={18} style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
+          </div>
+          <div style={{ display: "flex", gap: "1rem" }}>
           <input 
             type="file" 
             accept=".csv" 
@@ -187,6 +231,7 @@ export default function AdminProductsPage() {
             <Plus size={20} />
             Nuevo Producto
           </Button>
+        </div>
         </div>
       </div>
 
@@ -217,12 +262,12 @@ export default function AdminProductsPage() {
               </tr>
             </thead>
             <tbody>
-              {products.map((product) => (
+              {paginatedProducts.map((product) => (
                 <tr key={product.id} style={{ borderBottom: "1px solid #eee" }}>
                   <td style={{ padding: "1rem" }}>
                     <div style={{ fontWeight: 600 }}>{product.name}</div>
                     <div style={{ fontSize: "0.875rem", color: "var(--text-muted)" }}>
-                      {product.description.substring(0, 50)}...
+                      {product.description ? `${String(product.description).substring(0, 50)}...` : ""}
                     </div>
                   </td>
                   <td style={{ padding: "1rem" }}>
@@ -240,32 +285,34 @@ export default function AdminProductsPage() {
                       </span>
                     )}
                   </td>
-                  <td style={{ padding: "1rem", textAlign: "right" }}>
-                    <button 
-                      onClick={() => handleOpenForm(product)}
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-accent)", marginRight: "0.75rem" }}
-                      title="Editar"
-                    >
-                      <Edit size={20} />
-                    </button>
-                    <button 
-                      onClick={() => handleToggleStatus(product.id, product.isActive)}
-                      style={{ background: "none", border: "none", cursor: "pointer", color: product.isActive ? "#666" : "#2e7d32", marginRight: "0.75rem" }}
-                      title={product.isActive ? "Deshabilitar" : "Habilitar"}
-                    >
-                      {product.isActive ? <EyeOff size={20} /> : <Eye size={20} />}
-                    </button>
-                    <button 
-                      onClick={() => confirmDelete(product.id, product.name)}
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "#c62828" }}
-                      title="Eliminar permanentemente"
-                    >
-                      <Trash2 size={20} />
-                    </button>
+                  <td style={{ padding: "1rem" }}>
+                    <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end", alignItems: "center", flexWrap: "nowrap" }}>
+                      <button 
+                        onClick={() => handleOpenForm(product)}
+                        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-accent)", padding: 0 }}
+                        title="Editar"
+                      >
+                        <Edit size={18} />
+                      </button>
+                      <button 
+                        onClick={() => handleToggleStatus(product.id, product.isActive)}
+                        style={{ background: "none", border: "none", cursor: "pointer", color: product.isActive ? "#666" : "#2e7d32", padding: 0 }}
+                        title={product.isActive ? "Deshabilitar" : "Habilitar"}
+                      >
+                        {product.isActive ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                      <button 
+                        onClick={() => confirmDelete(product.id, product.name)}
+                        style={{ background: "none", border: "none", cursor: "pointer", color: "#c62828", padding: 0 }}
+                        title="Eliminar permanentemente"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
-              {products.length === 0 && (
+              {filteredProducts.length === 0 && (
                 <tr>
                   <td colSpan={5} style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)" }}>
                     No hay productos registrados. Crea uno nuevo.
@@ -274,6 +321,32 @@ export default function AdminProductsPage() {
               )}
             </tbody>
           </table>
+          {totalPages > 1 && (
+            <div style={{ padding: "1rem", display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #eee", backgroundColor: "white" }}>
+              <div style={{ fontSize: "0.875rem", color: "var(--text-muted)" }}>
+                Mostrando {(currentPage - 1) * ITEMS_PER_PAGE + 1} a {Math.min(currentPage * ITEMS_PER_PAGE, filteredProducts.length)} de {filteredProducts.length} productos
+              </div>
+              <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  style={{ padding: "0.5rem", borderRadius: "6px", border: "1px solid #ddd", background: currentPage === 1 ? "#f5f5f5" : "white", cursor: currentPage === 1 ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <span style={{ fontSize: "0.875rem", fontWeight: 500, margin: "0 0.5rem" }}>
+                  Página {currentPage} de {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  style={{ padding: "0.5rem", borderRadius: "6px", border: "1px solid #ddd", background: currentPage === totalPages ? "#f5f5f5" : "white", cursor: currentPage === totalPages ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -4,8 +4,13 @@ import React from "react";
 import Link from "next/link";
 import { LayoutDashboard, Package, LogOut } from "lucide-react";
 import { signOut } from "next-auth/react";
+import { usePathname } from "next/navigation";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const isProducts = pathname?.startsWith("/admin/products");
+  const isDashboard = pathname === "/admin";
+
   return (
     <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "var(--bg-secondary)" }}>
       {/* Sidebar */}
@@ -24,14 +29,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <nav style={{ display: "flex", flexDirection: "column", gap: "0.5rem", flex: 1 }}>
           <Link 
             href="/admin" 
-            style={{ padding: "0.75rem 1rem", borderRadius: "8px", display: "flex", alignItems: "center", gap: "0.75rem", color: "var(--text-inverse)" }}
+            style={{ 
+              padding: "0.75rem 1rem", 
+              borderRadius: "8px", 
+              display: "flex", 
+              alignItems: "center", 
+              gap: "0.75rem", 
+              backgroundColor: isDashboard ? "rgba(212, 164, 55, 0.1)" : "transparent",
+              color: isDashboard ? "var(--color-accent)" : "var(--text-inverse)" 
+            }}
           >
             <LayoutDashboard size={20} />
             Dashboard
           </Link>
           <Link 
             href="/admin/products" 
-            style={{ padding: "0.75rem 1rem", borderRadius: "8px", backgroundColor: "rgba(212, 164, 55, 0.1)", color: "var(--color-accent)", display: "flex", alignItems: "center", gap: "0.75rem" }}
+            style={{ 
+              padding: "0.75rem 1rem", 
+              borderRadius: "8px", 
+              backgroundColor: isProducts ? "rgba(212, 164, 55, 0.1)" : "transparent", 
+              color: isProducts ? "var(--color-accent)" : "var(--text-inverse)", 
+              display: "flex", 
+              alignItems: "center", 
+              gap: "0.75rem" 
+            }}
           >
             <Package size={20} />
             Productos
