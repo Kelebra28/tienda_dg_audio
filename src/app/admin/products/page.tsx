@@ -52,15 +52,12 @@ export default function AdminProductsPage() {
             return {
               name: row.Producto_Comercial || "Sin Nombre",
               description: row.Descripcion_Corta || "",
-              priceWithoutIva: costoSinIva,
-              price: costoSinIva * 1.16,
               stock: 0,
               category: row.Categoria || null,
               brand: row.Marca || null,
               family: row.Familia_Catalogo || null,
               subcategory: row.Subcategoria || null,
               model: row.Modelo || null,
-              currency: row.Moneda_Final || "MXN",
               isActive: true,
             };
           });
@@ -255,7 +252,6 @@ export default function AdminProductsPage() {
             <thead style={{ backgroundColor: "var(--bg-secondary)", borderBottom: "1px solid #eee" }}>
               <tr>
                 <th style={{ padding: "1rem" }}>Producto</th>
-                <th style={{ padding: "1rem" }}>Precio</th>
                 <th style={{ padding: "1rem" }}>Stock</th>
                 <th style={{ padding: "1rem" }}>Estado</th>
                 <th style={{ padding: "1rem", textAlign: "right" }}>Acciones</th>
@@ -269,9 +265,6 @@ export default function AdminProductsPage() {
                     <div style={{ fontSize: "0.875rem", color: "var(--text-muted)" }}>
                       {product.description ? `${String(product.description).substring(0, 50)}...` : ""}
                     </div>
-                  </td>
-                  <td style={{ padding: "1rem" }}>
-                    ${product.price.toLocaleString("es-MX", { minimumFractionDigits: 2 })}
                   </td>
                   <td style={{ padding: "1rem" }}>{product.stock}</td>
                   <td style={{ padding: "1rem" }}>

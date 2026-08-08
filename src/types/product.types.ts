@@ -2,16 +2,18 @@ export interface Product {
   id: string;
   name: string;
   description: string;
-  priceWithoutIva: number;
-  price: number;
   stock: number;
-  category?: string | null;
-  brand?: string | null;
-  family?: string | null;
-  subcategory?: string | null;
-  model?: string | null;
-  currency?: string | null;
-  imageUrl?: string | null;
+  category: string | null;
+  brand: string | null;
+  family: string | null;
+  subcategory: string | null;
+  model: string | null;
+  imageUrl: string | null;
+  images: any | null; // using any since Prisma Json maps to diverse types in TS by default
+  color: string | null;
+  warranty: string | null;
+  shipping: string | null;
+  storeClassification: string | null;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;

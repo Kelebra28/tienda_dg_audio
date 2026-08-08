@@ -14,7 +14,6 @@ export const ProductForm = ({ initialData, onSubmit, onCancel }: ProductFormProp
   const [formData, setFormData] = useState<Partial<Product>>({
     name: initialData?.name || "",
     description: initialData?.description || "",
-    price: initialData?.price || 0,
     stock: initialData?.stock || 0,
     imageUrl: initialData?.imageUrl || "",
     isActive: initialData?.isActive !== false,
@@ -113,11 +112,7 @@ export const ProductForm = ({ initialData, onSubmit, onCancel }: ProductFormProp
         <textarea required name="description" value={formData.description as string} onChange={handleChange} style={{ ...inputStyle, minHeight: "100px" }} />
       </div>
 
-      <div style={{ display: "flex", gap: "1rem" }}>
-        <div style={{ flex: 1 }}>
-          <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 500 }}>Precio ($)</label>
-          <input required type="number" step="0.01" name="price" value={formData.price as number} onChange={handleChange} style={inputStyle} />
-        </div>
+      <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
         <div style={{ flex: 1 }}>
           <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 500 }}>Stock</label>
           <input required type="number" name="stock" value={formData.stock as number} onChange={handleChange} style={inputStyle} />

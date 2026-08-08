@@ -17,11 +17,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   
   const cartItem = items.find(item => item.product.id === product.id);
   const currentQuantity = cartItem?.quantity || 0;
-  const isOutOfStock = product.stock <= 0 || currentQuantity >= product.stock;
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(price);
-  };
+  // formatPrice function removed
 
   return (
     <div className={styles.card}>
@@ -53,16 +50,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         <Link href={`/tienda/producto/${product.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
           <h3 className={styles.title}>{product.name}</h3>
         </Link>
-        <div className={styles.price}>{formatPrice(product.price)}</div>
+        {/* Price removed */}
         
         <button 
           className={styles.addToCartBtn} 
           onClick={() => addToCart(product)}
-          disabled={isOutOfStock}
-          style={{ opacity: isOutOfStock ? 0.5 : 1, cursor: isOutOfStock ? 'not-allowed' : 'pointer' }}
         >
           <ShoppingCart size={16} />
-          {product.stock <= 0 ? "Agotado" : isOutOfStock ? "Límite alcanzado" : "Agregar"}
+          Agregar a Cotización
         </button>
       </div>
     </div>

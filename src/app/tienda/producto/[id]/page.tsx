@@ -4,9 +4,23 @@ import Link from "next/link";
 import { PrismaClient } from "@prisma/client";
 import { notFound } from "next/navigation";
 import { AddToCartButton } from "./AddToCartButton";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, ShieldCheck, Truck, Headphones } from "lucide-react";
 import { Metadata } from "next";
 import { ProductCard } from "@/components/molecules/ProductCard";
+import { ProductGallery } from "@/components/organisms/ProductGallery";
+
+const getColorHex = (colorName: string) => {
+  const lower = colorName.toLowerCase();
+  if (lower.includes('negro') || lower.includes('black')) return '#000000';
+  if (lower.includes('blanco') || lower.includes('white')) return '#ffffff';
+  if (lower.includes('plata') || lower.includes('silver')) return '#c0c0c0';
+  if (lower.includes('gris') || lower.includes('grey') || lower.includes('gray')) return '#808080';
+  if (lower.includes('rojo') || lower.includes('red')) return '#ff0000';
+  if (lower.includes('azul') || lower.includes('blue')) return '#0000ff';
+  if (lower.includes('madera') || lower.includes('wood')) return '#8b5a2b';
+  if (lower.includes('fibra') || lower.includes('carbon')) return '#333333';
+  return '#e5e7eb'; // default grey
+}
 
 const prisma = new PrismaClient();
 export const dynamic = 'force-dynamic';
@@ -53,9 +67,9 @@ export default async function ProductDetailsPage({ params }: Props) {
     orderBy: { createdAt: 'desc' }
   });
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('es-MX', { style: 'currency', currency: product.currency || 'MXN' }).format(price);
-  };
+  const imagesArray = Array.isArray(product.images) && product.images.length > 0 
+    ? product.images as string[] 
+    : (product.imageUrl ? [product.imageUrl] : []);
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#f9fafb" }}>
@@ -92,26 +106,8 @@ export default async function ProductDetailsPage({ params }: Props) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '4rem', alignItems: 'flex-start' }}>
           
           {/* Image Gallery Column */}
-          <div style={{ backgroundColor: 'white', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', position: 'relative', aspectRatio: '1/1' }}>
-            {product.imageUrl ? (
-              <Image 
-                src={product.imageUrl} 
-                alt={product.name}
-                fill
-                style={{ objectFit: 'cover' }}
-                sizes="(max-width: 768px) 100vw, 50vw"
-                priority
-              />
-            ) : (
-              <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f3f4f6', color: '#9ca3af' }}>
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '16px' }}>
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                  <polyline points="21 15 16 10 5 21"></polyline>
-                </svg>
-                <span style={{ fontSize: '1.125rem', fontWeight: 500 }}>Sin foto disponible</span>
-              </div>
-            )}
+          <div style={{ height: '600px' }}>
+            <ProductGallery images={imagesArray} productName={product.name} />
           </div>
 
           {/* Product Details Column */}
@@ -146,20 +142,23 @@ export default async function ProductDetailsPage({ params }: Props) {
               )}
             </div>
 
-            {/* Price Section */}
-            <div style={{ padding: '1.5rem 0', borderTop: '1px solid #e5e7eb', borderBottom: '1px solid #e5e7eb', marginTop: '0.5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '1rem' }}>
-                <span style={{ fontSize: '2.5rem', fontWeight: 800, color: '#111827' }}>
-                  {formatPrice(product.price)}
-                </span>
-                <span style={{ fontSize: '1rem', color: '#6b7280' }}>
-                  Incluye IVA (16%)
-                </span>
+            {/* Colors */}
+            {product.color && (
+              <div style={{ marginTop: '0.5rem' }}>
+                <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#374151', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Color / Acabado
+                </h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={{ 
+                    width: '32px', height: '32px', borderRadius: '50%', 
+                    backgroundColor: getColorHex(product.color), 
+                    border: '1px solid #d1d5db',
+                    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)' 
+                  }} title={product.color} />
+                  <span style={{ fontSize: '1rem', color: '#4b5563', fontWeight: 500 }}>{product.color}</span>
+                </div>
               </div>
-              <div style={{ fontSize: '0.875rem', color: '#9ca3af', marginTop: '0.25rem' }}>
-                Precio sin IVA: {formatPrice(product.priceWithoutIva)} {product.currency}
-              </div>
-            </div>
+            )}
 
             {/* Description */}
             <div style={{ color: '#4b5563', lineHeight: 1.7, fontSize: '1rem', whiteSpace: 'pre-line' }}>
@@ -169,11 +168,41 @@ export default async function ProductDetailsPage({ params }: Props) {
             {/* Action Buttons */}
             <div style={{ marginTop: '1rem' }}>
               <AddToCartButton product={product} />
-              {product.stock <= 0 && (
-                <p style={{ textAlign: 'center', color: '#ef4444', fontSize: '0.875rem', marginTop: '0.75rem', fontWeight: 500 }}>
-                  Actualmente sin inventario.
-                </p>
+            </div>
+
+            {/* Trust Badges */}
+            <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.5rem', backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+              {product.warranty && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ color: '#10b981', backgroundColor: '#ecfdf5', padding: '0.5rem', borderRadius: '50%', display: 'flex' }}>
+                    <ShieldCheck size={24} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600, color: '#111827', fontSize: '0.95rem' }}>Garantía</div>
+                    <div style={{ color: '#6b7280', fontSize: '0.85rem' }}>{product.warranty}</div>
+                  </div>
+                </div>
               )}
+              {product.shipping && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ color: '#3b82f6', backgroundColor: '#eff6ff', padding: '0.5rem', borderRadius: '50%', display: 'flex' }}>
+                    <Truck size={24} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600, color: '#111827', fontSize: '0.95rem' }}>Envío</div>
+                    <div style={{ color: '#6b7280', fontSize: '0.85rem' }}>{product.shipping}</div>
+                  </div>
+                </div>
+              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ color: '#8b5cf6', backgroundColor: '#f5f3ff', padding: '0.5rem', borderRadius: '50%', display: 'flex' }}>
+                  <Headphones size={24} />
+                </div>
+                <div>
+                  <div style={{ fontWeight: 600, color: '#111827', fontSize: '0.95rem' }}>Soporte Especializado</div>
+                  <div style={{ color: '#6b7280', fontSize: '0.85rem' }}>Asesoría en tu compra e instalación</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

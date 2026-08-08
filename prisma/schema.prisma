@@ -11,46 +11,45 @@ model Product {
   id              String      @id @default(uuid())
   name            String
   description     String      @db.Text
-  priceWithoutIva Float       @default(0)
-  price           Float       // Price with IVA
   stock           Int         @default(0)
   category        String?
   brand           String?
   family          String?
   subcategory     String?
   model           String?
-  currency        String?     @default("MXN")
   imageUrl        String?     @db.LongText
+  images          Json?
+  color           String?
+  warranty        String?
+  shipping        String?
+  storeClassification String?
   isActive        Boolean     @default(true)
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
-  orderItems      OrderItem[]
+  quoteItems      QuoteItem[]
 }
 
-model Order {
+model Quote {
   id                   String      @id @default(uuid())
   customerName         String
   customerEmail        String
   customerPhone        String?
-  shippingAddress      String
-  totalAmount          Float
+  message              String?     @db.Text
   status               String      @default("PENDING")
-  openpayTransactionId String?     @unique
   createdAt            DateTime    @default(now())
   updatedAt            DateTime    @updatedAt
-  items                OrderItem[]
+  items                QuoteItem[]
 }
 
-model OrderItem {
+model QuoteItem {
   id        String  @id @default(uuid())
-  orderId   String
+  quoteId   String
   productId String
   quantity  Int
-  unitPrice Float
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  quote     Quote   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
   product   Product @relation(fields: [productId], references: [id])
 
-  @@index([orderId])
+  @@index([quoteId])
   @@index([productId])
 }
 
@@ -62,8 +61,3 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
- 
-// Falta datos para facturaxcion
-// rf 
-// rs
-// cocepto

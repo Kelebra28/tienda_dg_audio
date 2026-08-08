@@ -16,11 +16,11 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, description, price, stock, imageUrl, isActive } = body;
+    const { name, description, stock, imageUrl, isActive } = body;
 
-    if (!name || !description || price === undefined) {
+    if (!name || !description) {
       return NextResponse.json(
-        { error: "Missing required fields (name, description, price)" },
+        { error: "Missing required fields (name, description)" },
         { status: 400 }
       );
     }
@@ -29,7 +29,6 @@ export async function POST(request: Request) {
       data: {
         name,
         description,
-        price: parseFloat(price.toString()),
         stock: parseInt(stock?.toString() || "0"),
         imageUrl: imageUrl || null,
         isActive: isActive !== undefined ? isActive : true,

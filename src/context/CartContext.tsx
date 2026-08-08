@@ -52,8 +52,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const existingItem = prevItems.find((item) => item.product.id === product.id);
       
       if (existingItem) {
-        // No permitir exceder el stock
-        const newQuantity = Math.min(existingItem.quantity + quantity, product.stock);
+        // En modo cotización permitimos agregar sin límite de stock estricto
+        const newQuantity = existingItem.quantity + quantity;
         return prevItems.map((item) =>
           item.product.id === product.id
             ? { ...item, quantity: newQuantity }
@@ -61,10 +61,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         );
       }
       
-      // Para items nuevos, asegurar que no supere el stock (y que haya al menos 1 en stock)
-      if (product.stock <= 0) return prevItems;
-      const initialQuantity = Math.min(quantity, product.stock);
-      return [...prevItems, { product, quantity: initialQuantity }];
+      return [...prevItems, { product, quantity }];
     });
     setIsDrawerOpen(true); // Auto-open drawer when item is added
   };
@@ -81,9 +78,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setItems((prevItems) =>
       prevItems.map((item) => {
         if (item.product.id === productId) {
-          // No permitir exceder el stock
-          const newQuantity = Math.min(quantity, item.product.stock);
-          return { ...item, quantity: newQuantity };
+          return { ...item, quantity };
         }
         return item;
       })
@@ -94,7 +89,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setItems([]);
   };
 
-  const cartTotal = items.reduce((total, item) => total + item.product.price * item.quantity, 0);
+  const cartTotal = 0; // Removed price calculation
   const itemCount = items.reduce((count, item) => count + item.quantity, 0);
 
   return (

@@ -29,9 +29,7 @@ export const CartDrawer = () => {
     };
   }, [isDrawerOpen]);
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(price);
-  };
+  // formatPrice function removed
 
   return (
     <>
@@ -44,7 +42,7 @@ export const CartDrawer = () => {
         <div className={styles.header}>
           <h2 className={styles.title}>
             <ShoppingBag size={24} />
-            Tu Carrito
+            Lista de Cotización
           </h2>
           <button className={styles.closeBtn} onClick={() => setIsDrawerOpen(false)}>
             <X size={24} />
@@ -55,13 +53,13 @@ export const CartDrawer = () => {
           {items.length === 0 ? (
             <div className={styles.emptyState}>
               <ShoppingBag size={48} opacity={0.2} />
-              <p>Tu carrito está vacío.</p>
+              <p>Tu lista está vacía.</p>
               <button 
                 className={styles.checkoutBtn} 
                 style={{ width: 'auto', padding: '0.5rem 1.5rem', marginTop: '1rem' }}
                 onClick={() => setIsDrawerOpen(false)}
               >
-                Seguir comprando
+                Ver catálogo
               </button>
             </div>
           ) : (
@@ -91,7 +89,7 @@ export const CartDrawer = () => {
                 <div className={styles.itemDetails}>
                   <div>
                     <h4 className={styles.itemName}>{item.product.name}</h4>
-                    <div className={styles.itemPrice}>{formatPrice(item.product.price)}</div>
+                    {/* Price removed */}
                   </div>
                   
                   <div className={styles.itemActions}>
@@ -106,9 +104,6 @@ export const CartDrawer = () => {
                       <button 
                         className={styles.quantityBtn}
                         onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                        disabled={item.quantity >= item.product.stock}
-                        style={{ opacity: item.quantity >= item.product.stock ? 0.3 : 1, cursor: item.quantity >= item.product.stock ? 'not-allowed' : 'pointer' }}
-                        title={item.quantity >= item.product.stock ? "Stock máximo alcanzado" : ""}
                       >
                         <Plus size={14} />
                       </button>
@@ -128,13 +123,9 @@ export const CartDrawer = () => {
 
         {items.length > 0 && (
           <div className={styles.footer}>
-            <div className={styles.totalRow}>
-              <span>Subtotal:</span>
-              <span>{formatPrice(cartTotal)}</span>
-            </div>
             <Link href="/checkout" passHref style={{ textDecoration: 'none' }}>
               <button className={styles.checkoutBtn} onClick={() => setIsDrawerOpen(false)}>
-                Ir a pagar <ArrowRight size={18} />
+                Solicitar Cotización <ArrowRight size={18} />
               </button>
             </Link>
           </div>

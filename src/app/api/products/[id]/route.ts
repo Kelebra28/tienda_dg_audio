@@ -31,12 +31,11 @@ export async function PUT(
     const body = await request.json();
     
     // Filtramos solo los campos permitidos para actualizar
-    const { name, description, price, stock, imageUrl, isActive } = body;
+    const { name, description, stock, imageUrl, isActive } = body;
 
     const dataToUpdate: any = {};
     if (name !== undefined) dataToUpdate.name = name;
     if (description !== undefined) dataToUpdate.description = description;
-    if (price !== undefined) dataToUpdate.price = parseFloat(price.toString());
     if (stock !== undefined) dataToUpdate.stock = parseInt(stock.toString());
     if (imageUrl !== undefined) dataToUpdate.imageUrl = imageUrl;
     if (isActive !== undefined) dataToUpdate.isActive = isActive;

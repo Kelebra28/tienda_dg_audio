@@ -11,11 +11,7 @@ export default async function HomePage() {
     orderBy: { createdAt: "desc" }
   });
 
-  // Prisma devuelve Decimal o Float, nos aseguramos del tipado para la vista
-  const products: Product[] = dbProducts.map(p => ({
-    ...p,
-    price: Number(p.price)
-  }));
+  const products: Product[] = dbProducts;
   return (
     <div>
       {/* Hero Section */}

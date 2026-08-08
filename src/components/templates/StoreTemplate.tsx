@@ -56,11 +56,7 @@ export const StoreTemplate: React.FC<StoreTemplateProps> = ({
       );
     }
 
-    if (currentSort === 'price_asc') {
-      filtered = [...filtered].sort((a, b) => a.price - b.price);
-    } else if (currentSort === 'price_desc') {
-      filtered = [...filtered].sort((a, b) => b.price - a.price);
-    } else if (currentSort === 'name_asc') {
+    if (currentSort === 'name_asc') {
       filtered = [...filtered].sort((a, b) => String(a.name).localeCompare(String(b.name)));
     }
 
@@ -238,8 +234,6 @@ export const StoreTemplate: React.FC<StoreTemplateProps> = ({
               className={styles.sortSelect}
             >
               <option value="">Más recientes</option>
-              <option value="price_asc">Precio: de menor a mayor</option>
-              <option value="price_desc">Precio: de mayor a menor</option>
               <option value="name_asc">Nombre: A - Z</option>
             </select>
           </div>
