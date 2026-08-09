@@ -49,16 +49,21 @@ export default function AdminProductsPage() {
         try {
           const mappedProducts = results.data.map((row: any) => {
             const costoSinIva = parseFloat(row.Costo_Original_sin_IVA) || 0;
+            // Buscar posibles nombres de columnas para imágenes
+            const imgCol = row.Imagen || row.Imagen_URL || row.Imagen_1 || row.Image || null;
+            
             return {
-              name: row.Producto_Comercial || "Sin Nombre",
-              description: row.Descripcion_Corta || "",
+              ...(row.ID_Producto ? { id: row.ID_Producto } : {}),
+              name: row.Nombre_Producto || row.Producto_Comercial || "Sin Nombre",
+              description: row.Descripcion_Comercial || row.Descripcion_Corta || "",
               stock: 0,
               category: row.Categoria || null,
               brand: row.Marca || null,
               family: row.Familia_Catalogo || null,
               subcategory: row.Subcategoria || null,
               model: row.Modelo || null,
-              isActive: true,
+              ...(imgCol ? { imageUrl: imgCol, images: [imgCol] } : {}),
+              isActive: row.Publicar !== 'No',
             };
           });
 
