@@ -41,3 +41,28 @@ export async function POST(req: Request) {
     );
   }
 }
+
+export async function GET() {
+  try {
+    const quotes = await prisma.quote.findMany({
+      include: {
+        items: {
+          include: {
+            product: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    return NextResponse.json(quotes);
+  } catch (error) {
+    console.error("Error fetching quotes:", error);
+    return NextResponse.json(
+      { error: "Error al obtener las cotizaciones." },
+      { status: 500 }
+    );
+  }
+}

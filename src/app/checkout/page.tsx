@@ -11,6 +11,7 @@ export default function CheckoutPage() {
   const { items, clearCart } = useCart();
   const [mounted, setMounted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -77,14 +78,9 @@ export default function CheckoutPage() {
       const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
       window.open(whatsappUrl, "_blank");
 
-      // 4. Limpiar el carrito y el formulario
+      // 4. Mostrar pantalla de éxito y limpiar carrito
+      setIsSubmitted(true);
       clearCart();
-      setFormData({
-        customerName: "",
-        customerEmail: "",
-        customerPhone: "",
-        message: ""
-      });
       
     } catch (error) {
       console.error(error);
@@ -96,6 +92,27 @@ export default function CheckoutPage() {
 
   // Prevent hydration mismatch
   if (!mounted) return null;
+
+  if (isSubmitted) {
+    return (
+      <div className={styles.pageWrapper}>
+        <div className={styles.container}>
+          <div className={styles.emptyState}>
+            <div style={{ backgroundColor: "#ecfdf5", padding: "1.5rem", borderRadius: "50%", display: "inline-block", marginBottom: "1.5rem" }}>
+              <ShieldCheck size={64} strokeWidth={1.5} color="#10b981" />
+            </div>
+            <h2 style={{ color: "#111827", fontSize: "2rem", marginBottom: "1rem" }}>¡Solicitud Enviada con Éxito!</h2>
+            <p style={{ fontSize: "1.1rem", marginBottom: "2rem", color: "#4b5563" }}>
+              Hemos registrado tu solicitud. Un asesor la revisará y te contactará a la brevedad.
+            </p>
+            <Link href="/tienda" className={styles.backToStoreBtn}>
+              Volver al catálogo <ArrowRight size={18} />
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (

@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { LayoutDashboard, Package, LogOut } from "lucide-react";
+import { LayoutDashboard, Package, LogOut, ShoppingCart } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 
@@ -56,6 +56,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           >
             <Package size={20} />
             Productos
+          </Link>
+          <Link 
+            href="/admin/quotes" 
+            style={{ 
+              padding: "0.75rem 1rem", 
+              borderRadius: "8px", 
+              backgroundColor: pathname?.startsWith("/admin/quotes") ? "rgba(212, 164, 55, 0.1)" : "transparent", 
+              color: pathname?.startsWith("/admin/quotes") ? "var(--color-accent)" : "var(--text-inverse)", 
+              display: "flex", 
+              alignItems: "center", 
+              gap: "0.75rem" 
+            }}
+          >
+            <ShoppingCart size={20} />
+            Cotizaciones
           </Link>
         </nav>
 
