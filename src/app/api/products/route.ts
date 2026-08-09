@@ -16,7 +16,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, description, stock, imageUrl, isActive } = body;
+    const { name, description, stock, imageUrl, images, isActive } = body;
 
     if (!name || !description) {
       return NextResponse.json(
@@ -31,6 +31,7 @@ export async function POST(request: Request) {
         description,
         stock: parseInt(stock?.toString() || "0"),
         imageUrl: imageUrl || null,
+        images: images || null,
         isActive: isActive !== undefined ? isActive : true,
       },
     });

@@ -256,6 +256,7 @@ export default function AdminProductsPage() {
           <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
             <thead style={{ backgroundColor: "var(--bg-secondary)", borderBottom: "1px solid #eee" }}>
               <tr>
+                <th style={{ padding: "1rem", width: "60px" }}>Img</th>
                 <th style={{ padding: "1rem" }}>Producto</th>
                 <th style={{ padding: "1rem" }}>Stock</th>
                 <th style={{ padding: "1rem" }}>Estado</th>
@@ -265,6 +266,16 @@ export default function AdminProductsPage() {
             <tbody>
               {paginatedProducts.map((product) => (
                 <tr key={product.id} style={{ borderBottom: "1px solid #eee" }}>
+                  <td style={{ padding: "1rem" }}>
+                    <div style={{ width: "40px", height: "40px", borderRadius: "8px", overflow: "hidden", backgroundColor: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      {product.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={product.imageUrl} alt={product.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        <span style={{ fontSize: "0.6rem", color: "#9ca3af" }}>N/A</span>
+                      )}
+                    </div>
+                  </td>
                   <td style={{ padding: "1rem" }}>
                     <div style={{ fontWeight: 600 }}>{product.name}</div>
                     <div style={{ fontSize: "0.875rem", color: "var(--text-muted)" }}>

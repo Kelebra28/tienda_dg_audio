@@ -31,13 +31,14 @@ export async function PUT(
     const body = await request.json();
     
     // Filtramos solo los campos permitidos para actualizar
-    const { name, description, stock, imageUrl, isActive } = body;
+    const { name, description, stock, imageUrl, images, isActive } = body;
 
     const dataToUpdate: any = {};
     if (name !== undefined) dataToUpdate.name = name;
     if (description !== undefined) dataToUpdate.description = description;
     if (stock !== undefined) dataToUpdate.stock = parseInt(stock.toString());
     if (imageUrl !== undefined) dataToUpdate.imageUrl = imageUrl;
+    if (images !== undefined) dataToUpdate.images = images;
     if (isActive !== undefined) dataToUpdate.isActive = isActive;
 
     const updatedProduct = await prisma.product.update({
