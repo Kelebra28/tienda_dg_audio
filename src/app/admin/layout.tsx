@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { LayoutDashboard, Package, LogOut, ShoppingCart } from "lucide-react";
+import { LayoutDashboard, Package, LogOut, ShoppingCart, FileText } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 
@@ -10,6 +10,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const isProducts = pathname?.startsWith("/admin/products");
   const isDashboard = pathname === "/admin";
+  const isBlog = pathname?.startsWith("/admin/blog");
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "var(--bg-secondary)" }}>
@@ -71,6 +72,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           >
             <ShoppingCart size={20} />
             Cotizaciones
+          </Link>
+          <Link 
+            href="/admin/blog" 
+            style={{ 
+              padding: "0.75rem 1rem", 
+              borderRadius: "8px", 
+              backgroundColor: isBlog ? "rgba(212, 164, 55, 0.1)" : "transparent", 
+              color: isBlog ? "var(--color-accent)" : "var(--text-inverse)", 
+              display: "flex", 
+              alignItems: "center", 
+              gap: "0.75rem" 
+            }}
+          >
+            <FileText size={20} />
+            Blog
           </Link>
         </nav>
 

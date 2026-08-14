@@ -61,3 +61,16 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model Post {
+  id             String   @id @default(uuid())
+  title          String
+  slug           String   @unique
+  content        String   @db.LongText
+  imageUrl       String?  @db.LongText
+  published      Boolean  @default(false)
+  seoTitle       String?
+  seoDescription String?  @db.Text
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
