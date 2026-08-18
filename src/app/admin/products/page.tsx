@@ -5,6 +5,7 @@ import { useAdminProducts } from "@/hooks/useAdminProducts";
 import { Product } from "@/types/product.types";
 import { Button } from "@/components/atoms/Button";
 import { ProductForm } from "@/components/organisms/ProductForm";
+import { ImportPreviewModal } from "@/components/organisms/ImportPreviewModal";
 import { Plus, Edit, Trash2, Eye, EyeOff, Upload, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import toast from "react-hot-toast";
 import Papa from "papaparse";
@@ -20,6 +21,11 @@ export default function AdminProductsPage() {
   
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 50;
+
+  // Import states
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [previewSummary, setPreviewSummary] = useState({ newCount: 0, modifiedCount: 0, unmodifiedCount: 0, imageConflictsCount: 0 });
+  const [productsToImport, setProductsToImport] = useState<{ newProducts: any[], modifiedProducts: any[] }>({ newProducts: [], modifiedProducts: [] });
 
   useEffect(() => {
     setCurrentPage(1);
@@ -48,8 +54,6 @@ export default function AdminProductsPage() {
       complete: async (results) => {
         try {
           const mappedProducts = results.data.map((row: any) => {
-            const costoSinIva = parseFloat(row.Costo_Original_sin_IVA) || 0;
-            // Buscar posibles nombres de columnas para imágenes
             const imgCol = row.Imagen || row.Imagen_URL || row.Imagen_1 || row.Image || null;
             
             return {
@@ -67,9 +71,9 @@ export default function AdminProductsPage() {
             };
           });
 
-          toast.loading("Subiendo productos al servidor...", { id: loadingToast });
+          toast.loading("Generando previsualización de importación...", { id: loadingToast });
 
-          const response = await fetch('/api/products/bulk', {
+          const response = await fetch('/api/products/import-preview', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(mappedProducts)
@@ -78,8 +82,21 @@ export default function AdminProductsPage() {
           const resData = await response.json();
           if (!response.ok) throw new Error(resData.error);
 
-          toast.success(`Se importaron ${resData.count} productos exitosamente`, { id: loadingToast });
-          window.location.reload();
+          setPreviewSummary({
+            newCount: resData.newProducts.length,
+            modifiedCount: resData.modifiedProducts.length,
+            unmodifiedCount: resData.unmodifiedCount,
+            imageConflictsCount: resData.imageConflictsCount
+          });
+
+          setProductsToImport({
+            newProducts: resData.newProducts,
+            modifiedProducts: resData.modifiedProducts
+          });
+
+          toast.dismiss(loadingToast);
+          setIsPreviewModalOpen(true);
+          setIsUploading(false);
         } catch (err: any) {
           toast.error(`Error: ${err.message}`, { id: loadingToast });
           setIsUploading(false);
@@ -92,6 +109,36 @@ export default function AdminProductsPage() {
         if (fileInputRef.current) fileInputRef.current.value = "";
       }
     });
+  };
+
+  const handleConfirmImport = async (imageAction: "keep" | "replace") => {
+    setIsUploading(true);
+    const loadingToast = toast.loading("Guardando productos en la base de datos...");
+    try {
+      const allToImport = [
+        ...productsToImport.newProducts,
+        ...productsToImport.modifiedProducts
+      ];
+
+      const response = await fetch('/api/products/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          products: allToImport,
+          imageAction
+        })
+      });
+
+      const resData = await response.json();
+      if (!response.ok) throw new Error(resData.error);
+
+      toast.success(`Se importaron ${resData.count} productos exitosamente`, { id: loadingToast });
+      setIsPreviewModalOpen(false);
+      window.location.reload();
+    } catch (err: any) {
+      toast.error(`Error: ${err.message}`, { id: loadingToast });
+      setIsUploading(false);
+    }
   };
 
   const handleSubmit = async (data: Partial<Product>) => {
@@ -358,6 +405,15 @@ export default function AdminProductsPage() {
           )}
         </div>
       )}
+
+      {/* Import Preview Modal */}
+      <ImportPreviewModal
+        isOpen={isPreviewModalOpen}
+        onClose={() => setIsPreviewModalOpen(false)}
+        onConfirm={handleConfirmImport}
+        summary={previewSummary}
+        isImporting={isUploading}
+      />
     </div>
   );
 }

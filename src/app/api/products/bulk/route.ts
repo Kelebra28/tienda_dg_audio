@@ -3,37 +3,74 @@ import prisma from "@/lib/prisma";
 
 export async function POST(req: Request) {
   try {
-    const products = await req.json();
+    const body = await req.json();
+    
+    let products: any[] = [];
+    let imageAction: "keep" | "replace" = "replace";
 
-    if (!Array.isArray(products)) {
-      return NextResponse.json({ error: "El formato de datos no es válido. Se esperaba un array." }, { status: 400 });
+    if (Array.isArray(body)) {
+      products = body;
+    } else if (body && Array.isArray(body.products)) {
+      products = body.products;
+      imageAction = body.imageAction || "replace";
+    } else {
+      return NextResponse.json({ error: "El formato de datos no es válido. Se esperaba un array o un objeto con un array de productos." }, { status: 400 });
     }
 
     let successCount = 0;
 
-    // Procesar cada producto: Upsert (Actualizar si existe, Crear si no)
+    // Process each product
     for (const product of products) {
+      const dataToSave = {
+        name: product.name,
+        description: product.description,
+        stock: product.stock ?? 0,
+        category: product.category,
+        brand: product.brand,
+        family: product.family,
+        subcategory: product.subcategory,
+        model: product.model,
+        isActive: product.isActive,
+      };
+
       if (product.id) {
-        // Intentar actualizar
+        // Find existing product first to implement imageAction conditional
+        const existing = await prisma.product.findUnique({
+          where: { id: product.id }
+        });
+
+        let finalImageUrl = product.imageUrl;
+        let finalImages = product.images;
+
+        if (existing) {
+          const hasDbImage = !!(existing.imageUrl || (Array.isArray(existing.images) && (existing.images as string[]).length > 0));
+          if (hasDbImage && imageAction === "keep") {
+            finalImageUrl = existing.imageUrl;
+            finalImages = existing.images;
+          }
+        }
+
         await prisma.product.upsert({
           where: { id: product.id },
           update: {
-            name: product.name,
-            description: product.description,
-            category: product.category,
-            brand: product.brand,
-            family: product.family,
-            subcategory: product.subcategory,
-            model: product.model,
-            isActive: product.isActive,
-            ...(product.imageUrl ? { imageUrl: product.imageUrl, images: product.images } : {})
+            ...dataToSave,
+            imageUrl: finalImageUrl,
+            images: finalImages
           },
-          create: product
+          create: {
+            id: product.id,
+            ...dataToSave,
+            imageUrl: finalImageUrl,
+            images: finalImages
+          }
         });
       } else {
-        // Si no tiene ID en el CSV, lo creamos
         await prisma.product.create({
-          data: product
+          data: {
+            ...dataToSave,
+            imageUrl: product.imageUrl,
+            images: product.images
+          }
         });
       }
       successCount++;

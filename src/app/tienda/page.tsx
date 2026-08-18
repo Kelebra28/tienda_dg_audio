@@ -10,10 +10,6 @@ export const metadata: Metadata = {
 const prisma = new PrismaClient();
 export const dynamic = 'force-dynamic';
 
-interface TiendaPageProps {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}
-
 export default async function TiendaPage() {
   const [products, categoriesRaw, brandsRaw, familiesRaw] = await Promise.all([
     prisma.product.findMany({ 
@@ -31,42 +27,171 @@ export default async function TiendaPage() {
 
   return (
     <>
+      {/* Landing-Matched Premium Hero Section */}
       <div 
-        className="section-black" 
         style={{ 
-          paddingTop: '160px', 
-          paddingBottom: '100px', 
+          paddingTop: '180px', 
+          paddingBottom: '120px', 
           textAlign: 'center',
-          background: 'radial-gradient(circle at center, #1c1f26 0%, #050505 100%)',
+          // High-end blurred architectural dark living room image with dark warm overlay
+          backgroundImage: 'linear-gradient(to bottom, rgba(10, 11, 14, 0.78) 0%, rgba(10, 11, 14, 0.92) 100%), url("https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=1600&auto=format&fit=crop")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
           position: 'relative',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
         }}
       >
+        {/* Subtle Warm Light Glow */}
         <div 
           style={{
             position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'url(/bg-pattern.svg) center/cover',
-            opacity: 0.03,
-            pointerEvents: 'none'
+            top: '20%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '600px',
+            height: '400px',
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(212, 164, 55, 0.08) 0%, rgba(0, 0, 0, 0) 70%)',
+            filter: 'blur(60px)',
+            pointerEvents: 'none',
+            zIndex: 0
           }}
         />
-        <div className="container" style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ display: 'inline-block', border: '1px solid rgba(212, 164, 55, 0.3)', padding: '0.4rem 1rem', borderRadius: '99px', marginBottom: '1.5rem', color: '#d4a437', fontSize: '0.85rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-            Experiencia Premium
+
+        {/* Content Container */}
+        <div className="container" style={{ position: 'relative', zIndex: 2 }}>
+          
+          {/* Accent Gold Pill Badge (Exact landing match) */}
+          <div 
+            style={{ 
+              display: 'inline-block', 
+              border: '1px solid #d4a437', 
+              padding: '0.45rem 1.25rem', 
+              borderRadius: '99px', 
+              marginBottom: '1.75rem', 
+              color: '#d4a437', 
+              fontSize: '0.8rem', 
+              fontWeight: 600, 
+              letterSpacing: '0.15em', 
+              textTransform: 'uppercase',
+              backgroundColor: 'rgba(212, 164, 55, 0.03)'
+            }}
+          >
+            Equipos y Componentes High-End
           </div>
-          <h1 className="section-title text-white" style={{ fontSize: '3.5rem', marginBottom: '1.5rem', fontWeight: 700, letterSpacing: '-0.02em' }}>
-            Catálogo de <span className="text-accent" style={{ color: '#d4a437' }}>Productos</span>
+          
+          {/* Main Title (Identical font style and structure to landing) */}
+          <h1 
+            style={{ 
+              fontSize: '3.85rem', 
+              lineHeight: 1.15,
+              marginBottom: '1.5rem', 
+              fontWeight: 700, 
+              letterSpacing: '-0.02em',
+              color: '#ffffff',
+              fontFamily: 'var(--font-heading)'
+            }}
+          >
+            Equipos y componentes que <br />
+            <span style={{ color: '#d4a437' }}>elevan la experiencia</span> <br />
+            <span style={{ color: '#d4a437' }}>acústica de tu auto.</span>
           </h1>
-          <p className="section-subtitle" style={{ color: 'rgba(255,255,255,0.7)', fontSize: '1.25rem', maxWidth: '600px', margin: '0 auto', lineHeight: 1.6 }}>
-            Encuentra los mejores equipos, accesorios e instalaciones para llevar tu experiencia auditiva al siguiente nivel.
+          
+          {/* Subtitle */}
+          <p 
+            style={{ 
+              color: 'rgba(255, 255, 255, 0.75)', 
+              fontSize: '1.2rem', 
+              maxWidth: '650px', 
+              margin: '0 auto 3rem auto', 
+              lineHeight: 1.6,
+              fontFamily: 'var(--font-body)'
+            }}
+          >
+            Transformamos el sonido de tu vehículo en una experiencia sensorial de alta fidelidad. 
+            Diseño, integración y marcas premium líderes en car audio a tu alcance.
           </p>
+
+          {/* Landing-Style Pill Category Badges */}
+          <div 
+            style={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              gap: '1rem', 
+              flexWrap: 'wrap',
+              maxWidth: '850px',
+              margin: '0 auto 3rem auto'
+            }}
+          >
+            {[
+              { label: 'Car Audio Premium', icon: '🔊' },
+              { label: 'Accesorios de Instalación', icon: '🔌' },
+              { label: 'Procesadores y DSP', icon: '🎛️' },
+              { label: 'Amplificadores High-End', icon: '⚡' }
+            ].map((item, idx) => (
+              <div 
+                key={idx}
+                style={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  color: '#ffffff',
+                  padding: '0.65rem 1.35rem',
+                  borderRadius: '99px',
+                  fontSize: '0.9rem',
+                  fontWeight: 500,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
+                }}
+              >
+                <span>{item.icon}</span>
+                <span>{item.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Action Buttons (Matched with landing style) */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
+            <a 
+              href="https://wa.me/525537270177?text=Hola,%20quisiera%20cotizar%20un%20proyecto" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-primary"
+              style={{
+                padding: '0.85rem 2rem',
+                fontSize: '0.95rem',
+                boxShadow: '0 4px 15px rgba(212, 164, 55, 0.25)',
+                display: 'inline-block'
+              }}
+            >
+              Cotizar mi proyecto
+            </a>
+            <a 
+              href="#catalogo-store"
+              style={{
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                color: '#ffffff',
+                backgroundColor: 'rgba(255,255,255,0.03)',
+                padding: '0.85rem 2rem',
+                borderRadius: '8px',
+                fontWeight: 600,
+                fontSize: '0.95rem',
+                transition: 'all 0.2s ease',
+                display: 'inline-block'
+              }}
+            >
+              Explorar catálogo
+            </a>
+          </div>
+
         </div>
       </div>
-      <div className="section-light-alt" style={{ minHeight: '100vh', paddingBottom: '4rem', paddingTop: '2rem', backgroundColor: '#f9fafb' }}>
+
+      {/* Main Catalog Body */}
+      <div id="catalogo-store" className="section-light-alt" style={{ minHeight: '100vh', paddingBottom: '4rem', paddingTop: '3rem', backgroundColor: '#f5f5f7' }}>
         <StoreTemplate 
           products={products} 
           categories={categories}
