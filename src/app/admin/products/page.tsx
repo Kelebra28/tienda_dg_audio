@@ -6,9 +6,50 @@ import { Product } from "@/types/product.types";
 import { Button } from "@/components/atoms/Button";
 import { ProductForm } from "@/components/organisms/ProductForm";
 import { ImportPreviewModal } from "@/components/organisms/ImportPreviewModal";
-import { Plus, Edit, Trash2, Eye, EyeOff, Upload, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, EyeOff, Upload, Search, ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react";
 import toast from "react-hot-toast";
 import Papa from "papaparse";
+
+const CustomAdminSelect = ({ value, options, onChange }: any) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setIsOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+  
+  return (
+    <div ref={ref} style={{ position: "relative", minWidth: "200px" }}>
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        style={{ width: "100%", padding: "0.6rem 1rem", borderRadius: "8px", border: "1px solid var(--border-color)", backgroundColor: "white", fontSize: "0.9rem", color: "var(--text-primary)", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}
+      >
+        {options.find((o: any) => o.value === value)?.label}
+        <ChevronDown size={16} style={{ color: "#666", transform: isOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+      </button>
+      {isOpen && (
+        <div style={{ position: "absolute", top: "100%", left: 0, width: "100%", marginTop: "0.25rem", backgroundColor: "white", border: "1px solid var(--border-color)", borderRadius: "8px", boxShadow: "0 4px 12px rgba(0,0,0,0.1)", zIndex: 50, padding: "0.25rem" }}>
+          {options.map((opt: any) => (
+            <button
+              key={opt.value}
+              onClick={() => { onChange(opt.value); setIsOpen(false); }}
+              style={{ width: "100%", padding: "0.5rem 0.75rem", textAlign: "left", background: value === opt.value ? "#f3f4f6" : "transparent", border: "none", borderRadius: "4px", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", transition: "background 0.1s" }}
+              onMouseEnter={(e) => e.currentTarget.style.background = "#f3f4f6"}
+              onMouseLeave={(e) => e.currentTarget.style.background = value === opt.value ? "#f3f4f6" : "transparent"}
+            >
+              <span style={{ fontSize: "0.85rem", color: value === opt.value ? "#111827" : "#4b5563", fontWeight: value === opt.value ? 600 : 400 }}>{opt.label}</span>
+              {value === opt.value && <Check size={14} style={{ color: "#111827" }} />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default function AdminProductsPage() {
   const { products, isLoading, error, addProduct, updateProduct, toggleProductStatus, hardDeleteProduct } = useAdminProducts();
@@ -17,6 +58,12 @@ export default function AdminProductsPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const deferredSearchTerm = useDeferredValue(searchTerm);
+  
+  // Filtros
+  const [filterImage, setFilterImage] = useState<"all" | "with" | "without">("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
+  const [filterStock, setFilterStock] = useState<"all" | "in_stock" | "out_of_stock">("all");
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [currentPage, setCurrentPage] = useState(1);
@@ -29,7 +76,7 @@ export default function AdminProductsPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [deferredSearchTerm]);
+  }, [deferredSearchTerm, filterImage, filterStatus, filterStock]);
 
   const handleOpenForm = (product?: Product) => {
     setEditingProduct(product || null);
@@ -222,13 +269,30 @@ export default function AdminProductsPage() {
   }
 
   const filteredProducts = products.filter(p => {
-    if (!deferredSearchTerm) return true;
-    const searchLower = String(deferredSearchTerm).toLowerCase();
-    return (
-      (p.name && String(p.name).toLowerCase().includes(searchLower)) ||
-      (p.description && String(p.description).toLowerCase().includes(searchLower)) ||
-      (p.model && String(p.model).toLowerCase().includes(searchLower))
-    );
+    // 1. Búsqueda por texto
+    if (deferredSearchTerm) {
+      const searchLower = String(deferredSearchTerm).toLowerCase();
+      const matchesSearch = (
+        (p.name && String(p.name).toLowerCase().includes(searchLower)) ||
+        (p.description && String(p.description).toLowerCase().includes(searchLower)) ||
+        (p.model && String(p.model).toLowerCase().includes(searchLower))
+      );
+      if (!matchesSearch) return false;
+    }
+
+    // 2. Filtro de Imagen
+    if (filterImage === "with" && !p.imageUrl) return false;
+    if (filterImage === "without" && p.imageUrl) return false;
+
+    // 3. Filtro de Estado
+    if (filterStatus === "active" && !p.isActive) return false;
+    if (filterStatus === "inactive" && p.isActive) return false;
+
+    // 4. Filtro de Stock
+    if (filterStock === "in_stock" && p.stock <= 0) return false;
+    if (filterStock === "out_of_stock" && p.stock > 0) return false;
+
+    return true;
   });
 
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
@@ -283,6 +347,38 @@ export default function AdminProductsPage() {
         </div>
         </div>
       </div>
+
+      {!isFormOpen && (
+        <div style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+          <CustomAdminSelect 
+            value={filterImage} 
+            onChange={setFilterImage}
+            options={[
+              { value: "all", label: "Todas las imágenes" },
+              { value: "with", label: "Con Imagen" },
+              { value: "without", label: "Sin Imagen" }
+            ]}
+          />
+          <CustomAdminSelect 
+            value={filterStatus} 
+            onChange={setFilterStatus}
+            options={[
+              { value: "all", label: "Todos los estados" },
+              { value: "active", label: "Activos" },
+              { value: "inactive", label: "Inactivos" }
+            ]}
+          />
+          <CustomAdminSelect 
+            value={filterStock} 
+            onChange={setFilterStock}
+            options={[
+              { value: "all", label: "Todo el stock" },
+              { value: "in_stock", label: "En Stock" },
+              { value: "out_of_stock", label: "Agotados" }
+            ]}
+          />
+        </div>
+      )}
 
       {error && (
         <div style={{ padding: "1rem", backgroundColor: "#ffebee", color: "#c62828", borderRadius: "8px", marginBottom: "2rem" }}>
