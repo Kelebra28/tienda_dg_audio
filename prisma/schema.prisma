@@ -71,6 +71,12 @@ model Post {
   published      Boolean  @default(false)
   seoTitle       String?
   seoDescription String?  @db.Text
+  seoKeywords    String?  @db.Text
+  coverImageAlt  String?
+  category       String?
+  authorName     String   @default("DG Audio")
+  authorImage    String?  @db.LongText
+  publishAt      DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }

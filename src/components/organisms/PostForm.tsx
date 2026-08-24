@@ -4,7 +4,7 @@ import { useImageUpload } from "@/hooks/useImageUpload";
 import { motion, AnimatePresence } from "framer-motion";
 import { Image as ImageIcon, Eye, FileText, Settings, Sparkles, X, Globe, MessageSquare } from "lucide-react";
 import toast from "react-hot-toast";
-
+import { BlockEditor } from "./BlockEditor";
 interface Post {
   id?: string;
   title: string;
@@ -14,6 +14,12 @@ interface Post {
   published: boolean;
   seoTitle?: string | null;
   seoDescription?: string | null;
+  seoKeywords?: string | null;
+  coverImageAlt?: string | null;
+  category?: string | null;
+  authorName?: string;
+  authorImage?: string | null;
+  publishAt?: Date | string | null;
 }
 
 interface PostFormProps {
@@ -44,13 +50,48 @@ export const PostForm = ({ initialData, onSubmit, onCancel, isSubmitting }: Post
     published: initialData?.published || false,
     seoTitle: initialData?.seoTitle || "",
     seoDescription: initialData?.seoDescription || "",
+    seoKeywords: initialData?.seoKeywords || "",
+    coverImageAlt: initialData?.coverImageAlt || "",
+    category: initialData?.category || "Reseñas",
+    authorName: initialData?.authorName || "DG Audio",
+    authorImage: initialData?.authorImage || null,
+    publishAt: initialData?.publishAt ? new Date(initialData.publishAt).toISOString().slice(0, 16) : "",
   });
+
+  const CATEGORIES = ["Noticias", "Reseñas", "Tutoriales", "Novedades", "Ofertas", "Equipos"];
+
+  // Autosave Draft
+  useEffect(() => {
+    if (initialData?.id) return;
+    const draft = localStorage.getItem("post-draft");
+    if (draft && !initialData?.title) {
+      if (confirm("Tienes un borrador sin guardar. ¿Deseas restaurarlo?")) {
+        try {
+          const parsed = JSON.parse(draft);
+          setFormData(parsed);
+          if (parsed.slug) setSlugManualEdited(true);
+        } catch (e) {}
+      }
+    }
+  }, [initialData]);
+
+  useEffect(() => {
+    if (initialData?.id) return;
+    const timeout = setTimeout(() => {
+      if (formData.title || formData.content) {
+        localStorage.setItem("post-draft", JSON.stringify(formData));
+      }
+    }, 3000);
+    return () => clearTimeout(timeout);
+  }, [formData, initialData]);
 
   const [activeTab, setActiveTab] = useState<"editor" | "preview" | "seo">("editor");
   const [slugManualEdited, setSlugManualEdited] = useState(false);
   const { uploadImage, isUploading } = useImageUpload();
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(initialData?.imageUrl || null);
+  const [authorImageFile, setAuthorImageFile] = useState<File | null>(null);
+  const [authorImagePreview, setAuthorImagePreview] = useState<string | null>(initialData?.authorImage || null);
   const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
@@ -76,7 +117,7 @@ export const PostForm = ({ initialData, onSubmit, onCancel, isSubmitting }: Post
     setFormData((prev) => ({ ...prev, slug: slugify(slugVal) }));
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     let parsedValue: string | boolean = value;
     if (type === "checkbox") {
@@ -103,15 +144,40 @@ export const PostForm = ({ initialData, onSubmit, onCancel, isSubmitting }: Post
     setImagePreview(URL.createObjectURL(file));
   };
 
+  const handleAuthorFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("La foto de autor debe ser menor a 2MB.");
+      return;
+    }
+    const validTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      toast.error("Formato no soportado.");
+      return;
+    }
+
+    setAuthorImageFile(file);
+    setAuthorImagePreview(URL.createObjectURL(file));
+  };
+
   const handleRemoveImage = () => {
     setImageFile(null);
     setImagePreview(null);
     setFormData(prev => ({ ...prev, imageUrl: null }));
   };
 
+  const handleRemoveAuthorImage = () => {
+    setAuthorImageFile(null);
+    setAuthorImagePreview(null);
+    setFormData(prev => ({ ...prev, authorImage: null }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     let finalImageUrl = formData.imageUrl;
+    let finalAuthorImageUrl = formData.authorImage;
 
     if (imageFile) {
       const uploadedUrl = await uploadImage(imageFile);
@@ -122,10 +188,25 @@ export const PostForm = ({ initialData, onSubmit, onCancel, isSubmitting }: Post
       }
     }
 
-    onSubmit({
+    if (authorImageFile) {
+      const uploadedAuthorUrl = await uploadImage(authorImageFile);
+      if (uploadedAuthorUrl) {
+        finalAuthorImageUrl = uploadedAuthorUrl;
+      } else {
+        return;
+      }
+    }
+
+    await onSubmit({
       ...formData,
-      imageUrl: finalImageUrl
+      imageUrl: finalImageUrl,
+      authorImage: finalAuthorImageUrl,
+      publishAt: formData.publishAt ? new Date(formData.publishAt as string) : null,
     });
+
+    if (!initialData?.id) {
+      localStorage.removeItem("post-draft");
+    }
   };
 
   // Helper styles for glassmorphic elements
@@ -213,38 +294,55 @@ export const PostForm = ({ initialData, onSubmit, onCancel, isSubmitting }: Post
                   />
                 </div>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  <label style={{ fontWeight: 600, color: "var(--text-main)", fontSize: "0.9rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                    Enlace Permanente (Slug)
-                  </label>
-                  <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
-                    <span style={{ position: "absolute", left: "1rem", color: "var(--text-muted)", fontSize: "0.95rem", pointerEvents: "none" }}>
-                      /blog/
-                    </span>
-                    <input
-                      type="text"
-                      name="slug"
-                      value={formData.slug}
-                      onChange={handleSlugChange}
-                      required
-                      placeholder="slug-del-articulo"
-                      style={{ ...inputStyle, paddingLeft: "4rem", fontFamily: "monospace" }}
-                    />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                    <label style={{ fontWeight: 600, color: "var(--text-main)", fontSize: "0.9rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                      Enlace Permanente (Slug)
+                    </label>
+                    <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                      <span style={{ position: "absolute", left: "1rem", color: "var(--text-muted)", fontSize: "0.95rem", pointerEvents: "none" }}>
+                        /blog/
+                      </span>
+                      <input
+                        type="text"
+                        name="slug"
+                        value={formData.slug}
+                        onChange={handleSlugChange}
+                        required
+                        placeholder="slug-del-articulo"
+                        style={{ ...inputStyle, paddingLeft: "4rem", fontFamily: "monospace" }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                    <label style={{ fontWeight: 600, color: "var(--text-main)", fontSize: "0.9rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                      Categoría
+                    </label>
+                    <select
+                      name="category"
+                      value={formData.category || ""}
+                      onChange={handleChange}
+                      style={{ ...inputStyle, cursor: "pointer" }}
+                    >
+                      {CATEGORIES.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
+
+
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                   <label style={{ fontWeight: 600, color: "var(--text-main)", fontSize: "0.9rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                     Contenido del Post
                   </label>
-                  <textarea
-                    name="content"
-                    value={formData.content}
-                    onChange={handleChange}
-                    required
-                    rows={15}
-                    placeholder="Utiliza Markdown o HTML para escribir este fantástico artículo..."
-                    style={{ ...inputStyle, fontFamily: "monospace", resize: "vertical", minHeight: "350px" }}
+                  <BlockEditor
+                    initialHtml={formData.content}
+                    onChange={(html) => {
+                      setFormData((prev) => ({ ...prev, content: html }));
+                    }}
                   />
                 </div>
               </motion.div>
@@ -298,26 +396,50 @@ export const PostForm = ({ initialData, onSubmit, onCancel, isSubmitting }: Post
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  <label style={{ fontWeight: 600, color: "var(--text-main)", fontSize: "0.9rem" }}>SEO Título</label>
+                  <label style={{ fontWeight: 600, color: "var(--text-main)", fontSize: "0.9rem", display: 'flex', justifyContent: 'space-between' }}>
+                    <span>SEO Título</span>
+                    <span style={{ color: (formData.seoTitle?.length || 0) > 60 ? '#ef4444' : 'var(--text-muted)' }}>
+                      {(formData.seoTitle?.length || 0)}/60
+                    </span>
+                  </label>
                   <input
                     type="text"
                     name="seoTitle"
                     value={formData.seoTitle || ""}
                     onChange={handleChange}
+                    maxLength={100}
                     placeholder="Título SEO sugerido (max 60 caracteres)"
                     style={inputStyle}
                   />
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  <label style={{ fontWeight: 600, color: "var(--text-main)", fontSize: "0.9rem" }}>SEO Descripción</label>
+                  <label style={{ fontWeight: 600, color: "var(--text-main)", fontSize: "0.9rem", display: 'flex', justifyContent: 'space-between' }}>
+                    <span>SEO Descripción</span>
+                    <span style={{ color: (formData.seoDescription?.length || 0) > 160 ? '#ef4444' : 'var(--text-muted)' }}>
+                      {(formData.seoDescription?.length || 0)}/160
+                    </span>
+                  </label>
                   <textarea
                     name="seoDescription"
                     value={formData.seoDescription || ""}
                     onChange={handleChange}
+                    maxLength={300}
                     rows={4}
                     placeholder="Escribe un resumen atractivo para las búsquedas de Google (max 160 caracteres)..."
                     style={{ ...inputStyle, resize: "vertical" }}
+                  />
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  <label style={{ fontWeight: 600, color: "var(--text-main)", fontSize: "0.9rem" }}>Palabras Clave (SEO Keywords)</label>
+                  <input
+                    type="text"
+                    name="seoKeywords"
+                    value={formData.seoKeywords || ""}
+                    onChange={handleChange}
+                    placeholder="teatro en casa, audio, parlantes (separadas por comas)"
+                    style={inputStyle}
                   />
                 </div>
 
@@ -344,21 +466,41 @@ export const PostForm = ({ initialData, onSubmit, onCancel, isSubmitting }: Post
           {/* Status Settings Card */}
           <div style={{ ...cardStyle, padding: "1.5rem" }}>
             <h4 style={{ margin: "0 0 1rem 0", fontSize: "0.9rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>
-              Publicación
+              Publicación & Calendario
             </h4>
             
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", marginBottom: "1rem" }}>
-              <input
-                type="checkbox"
-                name="published"
-                id="published"
-                checked={formData.published}
-                onChange={handleChange}
-                style={{ width: "1.25rem", height: "1.25rem", accentColor: "var(--color-accent)", cursor: "pointer" }}
-              />
-              <label htmlFor="published" style={{ fontWeight: 600, fontSize: "0.95rem", cursor: "pointer", color: "var(--text-main)" }}>
-                Publicar post
-              </label>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem", padding: "1rem", backgroundColor: formData.published ? "rgba(212, 164, 55, 0.05)" : "transparent", borderRadius: "10px", border: "1px solid rgba(0,0,0,0.06)", marginBottom: "1.5rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                <input
+                  type="checkbox"
+                  name="published"
+                  id="published"
+                  checked={formData.published}
+                  onChange={handleChange}
+                  style={{ width: "1.25rem", height: "1.25rem", accentColor: "var(--color-accent)", cursor: "pointer" }}
+                />
+                <label htmlFor="published" style={{ fontWeight: 600, fontSize: "0.95rem", cursor: "pointer", color: "var(--text-main)" }}>
+                  Publicar artículo
+                </label>
+              </div>
+
+              {formData.published && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginTop: "0.5rem", borderTop: "1px dashed rgba(0,0,0,0.1)", paddingTop: "1rem" }}>
+                  <label style={{ fontWeight: 600, color: "var(--text-main)", fontSize: "0.85rem" }}>
+                    Programar Fecha y Hora (Opcional)
+                  </label>
+                  <input
+                    type="datetime-local"
+                    name="publishAt"
+                    value={formData.publishAt as string}
+                    onChange={handleChange}
+                    style={inputStyle}
+                  />
+                  <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                    Si seleccionas una fecha futura, el post permanecerá oculto al público hasta ese momento. Déjalo vacío para publicar inmediatamente.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
@@ -373,9 +515,12 @@ export const PostForm = ({ initialData, onSubmit, onCancel, isSubmitting }: Post
 
           {/* Cover Image Upload Card */}
           <div style={{ ...cardStyle, padding: "1.5rem" }}>
-            <h4 style={{ margin: "0 0 1rem 0", fontSize: "0.9rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>
-              Imagen de Portada
+            <h4 style={{ margin: "0 0 0.5rem 0", fontSize: "0.9rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>
+              Imagen Principal (Miniatura y SEO)
             </h4>
+            <p style={{ margin: "0 0 1rem 0", fontSize: "0.75rem", color: "var(--text-muted)", lineHeight: "1.4" }}>
+              Esta imagen representa todo el artículo. Aparecerá en la lista del blog y al compartir el enlace en redes sociales.
+            </p>
 
             {!imagePreview ? (
               <div
@@ -426,31 +571,45 @@ export const PostForm = ({ initialData, onSubmit, onCancel, isSubmitting }: Post
                 />
               </div>
             ) : (
-              <div style={{ position: "relative", borderRadius: "12px", overflow: "hidden", border: "1px solid rgba(0,0,0,0.08)" }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={imagePreview} alt="Preview" style={{ width: "100%", height: "auto", display: "block", objectFit: "cover" }} />
-                <button
-                  type="button"
-                  onClick={handleRemoveImage}
-                  style={{
-                    position: "absolute",
-                    top: "8px",
-                    right: "8px",
-                    backgroundColor: "rgba(220, 38, 38, 0.85)",
-                    border: "none",
-                    borderRadius: "50%",
-                    width: "24px",
-                    height: "24px",
-                    color: "white",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.2)"
-                  }}
-                >
-                  <X size={14} />
-                </button>
+              <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                <div style={{ position: "relative", borderRadius: "12px", overflow: "hidden", border: "1px solid rgba(0,0,0,0.08)" }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={imagePreview} alt={formData.coverImageAlt || "Preview"} style={{ width: "100%", height: "auto", display: "block", objectFit: "cover" }} />
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    style={{
+                      position: "absolute",
+                      top: "8px",
+                      right: "8px",
+                      backgroundColor: "rgba(220, 38, 38, 0.85)",
+                      border: "none",
+                      borderRadius: "50%",
+                      width: "24px",
+                      height: "24px",
+                      color: "white",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.2)"
+                    }}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+                
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  <label style={{ fontWeight: 600, color: "var(--text-main)", fontSize: "0.85rem" }}>Texto Alternativo (Alt SEO)</label>
+                  <input
+                    type="text"
+                    name="coverImageAlt"
+                    value={formData.coverImageAlt || ""}
+                    onChange={handleChange}
+                    placeholder="Ej. Amplificador de 5 canales marca X"
+                    style={{ ...inputStyle, padding: "0.5rem 0.75rem", fontSize: "0.9rem" }}
+                  />
+                </div>
               </div>
             )}
           </div>

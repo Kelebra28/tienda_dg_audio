@@ -2,72 +2,11 @@ import React from "react";
 import prisma from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
+import Link from "next/link";
+import "@/components/organisms/BlockEditor.css";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
-}
-
-// Custom simple parser to render basic markdown elements into HTML
-function renderMarkdown(md: string): string {
-  // Normalize line endings
-  let text = md.replace(/\r\n/g, "\n");
-
-  // Bold (**bold**)
-  text = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-
-  // Italic (*italic*)
-  text = text.replace(/\*(.*?)\*/g, "<em>$1</em>");
-
-  // Links ([text](url))
-  text = text.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" style="color: var(--color-accent); text-decoration: underline;" target="_blank" rel="noopener noreferrer">$1</a>');
-
-  const lines = text.split("\n");
-  let inList = false;
-  const processedLines = lines.map((line) => {
-    const trimmed = line.trim();
-
-    // Headers
-    if (trimmed.startsWith("### ")) {
-      return `<h3 style="font-size: 1.5rem; margin-top: 2rem; margin-bottom: 0.75rem; font-family: var(--font-heading); font-weight: 700; color: var(--text-main);">${trimmed.slice(4)}</h3>`;
-    }
-    if (trimmed.startsWith("## ")) {
-      return `<h2 style="font-size: 1.85rem; margin-top: 2.25rem; margin-bottom: 1rem; font-family: var(--font-heading); font-weight: 700; color: var(--text-main);">${trimmed.slice(3)}</h2>`;
-    }
-    if (trimmed.startsWith("# ")) {
-      return `<h1 style="font-size: 2.25rem; margin-top: 2.5rem; margin-bottom: 1.25rem; font-family: var(--font-heading); font-weight: 700; color: var(--text-main);">${trimmed.slice(2)}</h1>`;
-    }
-
-    // Bullet list items
-    if (trimmed.startsWith("- ")) {
-      let prefix = "";
-      if (!inList) {
-        inList = true;
-        prefix = '<ul style="margin-bottom: 1.25rem; padding-left: 1.5rem; list-style-type: disc;">';
-      }
-      return `${prefix}<li style="margin-bottom: 0.5rem; color: var(--text-main);">${trimmed.slice(2)}</li>`;
-    }
-
-    // Paragraph or empty line
-    if (inList) {
-      inList = false;
-      if (trimmed === "") {
-        return "</ul>";
-      }
-      return `</ul><p style="margin-bottom: 1.25rem; line-height: 1.75; color: var(--text-main); font-size: 1.05rem;">${trimmed}</p>`;
-    }
-
-    if (trimmed === "") {
-      return "";
-    }
-
-    return `<p style="margin-bottom: 1.25rem; line-height: 1.75; color: var(--text-main); font-size: 1.05rem;">${trimmed}</p>`;
-  });
-
-  if (inList) {
-    processedLines.push("</ul>");
-  }
-
-  return processedLines.join("\n");
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -82,9 +21,32 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
+  const keywords = post.seoKeywords 
+    ? post.seoKeywords.split(',').map(k => k.trim())
+    : [];
+
   return {
     title: post.seoTitle || `${post.title} | Blog`,
     description: post.seoDescription || post.content.substring(0, 160).replace(/[#*`_-]/g, ""),
+    keywords,
+    openGraph: {
+      title: post.seoTitle || post.title,
+      description: post.seoDescription || undefined,
+      type: 'article',
+      url: `https://dgaudiosound.com/blog/${post.slug}`,
+      images: post.imageUrl ? [
+        {
+          url: post.imageUrl,
+          alt: post.coverImageAlt || post.title,
+        }
+      ] : [],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.seoTitle || post.title,
+      description: post.seoDescription || undefined,
+      images: post.imageUrl ? [post.imageUrl] : [],
+    }
   };
 }
 
@@ -105,23 +67,36 @@ export default async function BlogPostPage({ params }: PageProps) {
     where: { slug },
   });
 
-  if (!post || !post.published) {
+  if (!post || !post.published || (post.publishAt && post.publishAt > new Date())) {
     notFound();
   }
 
-  const formattedDate = new Date(post.createdAt).toLocaleDateString("es-ES", {
+  const relatedPosts = post.category ? await prisma.post.findMany({
+    where: {
+      category: post.category,
+      published: true,
+      id: { not: post.id },
+      OR: [
+        { publishAt: null },
+        { publishAt: { lte: new Date() } }
+      ],
+    },
+    take: 3,
+    orderBy: { createdAt: 'desc' }
+  }) : [];
+
+  const postDate = post.publishAt ? new Date(post.publishAt) : new Date(post.createdAt);
+  const formattedDate = postDate.toLocaleDateString("es-ES", {
     year: "numeric",
     month: "long",
     day: "numeric",
   });
 
-  const parsedContent = renderMarkdown(post.content);
-
   return (
     <article style={{ maxWidth: "800px", margin: "2rem auto 4rem auto", padding: "0 1.5rem" }}>
       <header style={{ marginBottom: "2rem", borderBottom: "1px solid rgba(0, 0, 0, 0.08)", paddingBottom: "1.5rem" }}>
         <div style={{ color: "var(--color-accent)", textTransform: "uppercase", fontSize: "0.85rem", fontWeight: 600, letterSpacing: "0.05em", marginBottom: "0.5rem" }}>
-          Blog / DG Audiosound
+          Blog / {post.category || "General"}
         </div>
         <h1 style={{ fontSize: "2.75rem", fontFamily: "var(--font-heading)", fontWeight: 700, lineHeight: 1.15, color: "var(--text-main)", marginBottom: "1rem" }}>
           {post.title}
@@ -134,19 +109,45 @@ export default async function BlogPostPage({ params }: PageProps) {
       {post.imageUrl && (
         <div style={{ width: "100%", height: "auto", maxHeight: "450px", overflow: "hidden", borderRadius: "12px", marginBottom: "2rem", boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={post.imageUrl} alt={post.title} style={{ width: "100%", height: "auto", display: "block" }} />
+          <img src={post.imageUrl} alt={post.coverImageAlt || post.title} style={{ width: "100%", height: "auto", display: "block", objectFit: "cover" }} />
         </div>
       )}
 
       <div
+        className="blog-content"
         style={{
           fontFamily: "var(--font-body)",
           fontSize: "1.1rem",
           lineHeight: "1.8",
           color: "var(--text-main)",
         }}
-        dangerouslySetInnerHTML={{ __html: parsedContent }}
+        dangerouslySetInnerHTML={{ __html: post.content }}
       />
+
+      {relatedPosts.length > 0 && (
+        <section style={{ marginTop: "4rem", paddingTop: "2rem", borderTop: "1px solid rgba(0,0,0,0.08)" }}>
+          <h3 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1.5rem", color: "var(--text-main)" }}>Te podría interesar...</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: "1.5rem" }}>
+            {relatedPosts.map(rp => {
+              const rpDate = rp.publishAt ? new Date(rp.publishAt) : new Date(rp.createdAt);
+              return (
+                <Link href={`/blog/${rp.slug}`} key={rp.id} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", textDecoration: "none" }}>
+                  {rp.imageUrl ? (
+                    <div style={{ position: "relative", width: "100%", paddingTop: "56.25%", borderRadius: "8px", overflow: "hidden", backgroundColor: "rgba(0,0,0,0.05)" }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={rp.imageUrl} alt={rp.title} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+                    </div>
+                  ) : (
+                    <div style={{ width: "100%", paddingTop: "56.25%", borderRadius: "8px", backgroundColor: "rgba(0,0,0,0.05)" }} />
+                  )}
+                  <h4 style={{ margin: "0.5rem 0 0 0", fontSize: "1.1rem", fontWeight: 600, color: "var(--text-main)", lineHeight: 1.3 }}>{rp.title}</h4>
+                  <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>{rpDate.toLocaleDateString("es-ES", { year: "numeric", month: "short", day: "numeric" })}</span>
+                </Link>
+              )
+            })}
+          </div>
+        </section>
+      )}
     </article>
   );
 }

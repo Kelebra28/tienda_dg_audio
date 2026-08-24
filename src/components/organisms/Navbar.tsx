@@ -92,6 +92,11 @@ export const Navbar = () => {
               </Link>
             </li>
             <li className={styles.navItem}>
+              <Link href="/blog" className={`${styles.navLink} ${pathname.includes("/blog") ? styles.active : ""}`}>
+                Blog
+              </Link>
+            </li>
+            <li className={styles.navItem}>
               <Link href="https://dgaudiosound.com/#contacto" className={styles.navLink}>
                 Contacto
               </Link>

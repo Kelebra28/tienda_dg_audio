@@ -3,6 +3,11 @@ import { Product } from "@/types/product.types";
 import { Button } from "@/components/atoms/Button";
 import { useImageUpload } from "@/hooks/useImageUpload";
 import toast from "react-hot-toast";
+import { ArrowLeft, ArrowRight, X, Star } from "lucide-react";
+
+type ImageItem = 
+  | { type: 'existing', url: string }
+  | { type: 'new', file: File, previewUrl: string };
 
 interface ProductFormProps {
   initialData?: Partial<Product>;
@@ -22,12 +27,11 @@ export const ProductForm = ({ initialData, onSubmit, onCancel }: ProductFormProp
   const [isDragging, setIsDragging] = useState(false);
   const { uploadImage, isUploading } = useImageUpload();
 
-  const [existingUrls, setExistingUrls] = useState<string[]>(
-    Array.isArray(initialData?.images) 
-      ? initialData.images 
-      : (initialData?.imageUrl ? [initialData.imageUrl] : [])
-  );
-  const [newFiles, setNewFiles] = useState<{file: File, previewUrl: string}[]>([]);
+  const initialImages: ImageItem[] = (Array.isArray(initialData?.images) && initialData.images.length > 0
+    ? initialData.images 
+    : (initialData?.imageUrl ? [initialData.imageUrl] : [])).map((url: string) => ({ type: 'existing', url }));
+    
+  const [images, setImages] = useState<ImageItem[]>(initialImages);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -44,7 +48,7 @@ export const ProductForm = ({ initialData, onSubmit, onCancel }: ProductFormProp
 
   const validateAndAddFiles = (files: FileList | File[]) => {
     const validTypes = ["image/jpeg", "image/png", "image/webp"];
-    const addedFiles: {file: File, previewUrl: string}[] = [];
+    const addedFiles: ImageItem[] = [];
 
     Array.from(files).forEach(file => {
       if (file.size > 5 * 1024 * 1024) {
@@ -55,10 +59,28 @@ export const ProductForm = ({ initialData, onSubmit, onCancel }: ProductFormProp
         toast.error(`Formato no soportado para ${file.name}.`);
         return;
       }
-      addedFiles.push({ file, previewUrl: URL.createObjectURL(file) });
+      addedFiles.push({ type: 'new', file, previewUrl: URL.createObjectURL(file) });
     });
 
-    setNewFiles(prev => [...prev, ...addedFiles]);
+    setImages(prev => [...prev, ...addedFiles]);
+  };
+
+  const moveImage = (index: number, direction: 'left' | 'right') => {
+    if (direction === 'left' && index === 0) return;
+    if (direction === 'right' && index === images.length - 1) return;
+
+    setImages(prev => {
+      const newImages = [...prev];
+      const newIndex = direction === 'left' ? index - 1 : index + 1;
+      const temp = newImages[index];
+      newImages[index] = newImages[newIndex];
+      newImages[newIndex] = temp;
+      return newImages;
+    });
+  };
+
+  const removeImage = (index: number) => {
+    setImages(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -68,25 +90,27 @@ export const ProductForm = ({ initialData, onSubmit, onCancel }: ProductFormProp
     const loadingToast = toast.loading("Guardando producto...");
     
     try {
-      // Upload new files
-      const uploadedUrls: string[] = [];
-      for (const { file } of newFiles) {
-        const url = await uploadImage(file);
-        if (url) {
-          uploadedUrls.push(url);
+      const finalUrls: string[] = [];
+      
+      for (const item of images) {
+        if (item.type === 'existing') {
+          finalUrls.push(item.url);
         } else {
-          throw new Error("No se pudo subir una de las imágenes");
+          const url = await uploadImage(item.file);
+          if (url) {
+            finalUrls.push(url);
+          } else {
+            throw new Error("No se pudo subir una de las imágenes");
+          }
         }
       }
 
-      // Combine existing and newly uploaded URLs
-      const finalImages = [...existingUrls, ...uploadedUrls];
-      const primaryImageUrl = finalImages.length > 0 ? finalImages[0] : null;
+      const primaryImageUrl = finalUrls.length > 0 ? finalUrls[0] : null;
 
       await onSubmit({ 
         ...formData, 
         imageUrl: primaryImageUrl || "",
-        images: finalImages 
+        images: finalUrls 
       });
       
       toast.dismiss(loadingToast);
@@ -175,36 +199,71 @@ export const ProductForm = ({ initialData, onSubmit, onCancel }: ProductFormProp
         </div>
 
         {/* Previsualización de Imágenes */}
-        {(existingUrls.length > 0 || newFiles.length > 0) && (
-          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-            {existingUrls.map((url, i) => (
-              <div key={`exist-${i}`} style={{ position: 'relative' }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={url} alt={`img-${i}`} style={{ width: "100px", height: "100px", objectFit: 'cover', borderRadius: "8px", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }} />
-                <button 
-                  type="button"
-                  onClick={() => setExistingUrls(prev => prev.filter((_, idx) => idx !== i))}
-                  style={{
-                    position: 'absolute', top: '-8px', right: '-8px',
-                    background: '#ef4444', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                  }}
-                >✕</button>
-              </div>
-            ))}
-            {newFiles.map((f, i) => (
-              <div key={`new-${i}`} style={{ position: 'relative' }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={f.previewUrl} alt={`new-img-${i}`} style={{ width: "100px", height: "100px", objectFit: 'cover', borderRadius: "8px", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }} />
-                <button 
-                  type="button"
-                  onClick={() => setNewFiles(prev => prev.filter((_, idx) => idx !== i))}
-                  style={{
-                    position: 'absolute', top: '-8px', right: '-8px',
-                    background: '#ef4444', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                  }}
-                >✕</button>
+        {images.length > 0 && (
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem', backgroundColor: '#f9fafb', padding: '1rem', borderRadius: '8px', border: '1px solid #eee' }}>
+            {images.map((item, i) => (
+              <div key={i} style={{ 
+                position: 'relative', 
+                width: '120px', 
+                height: '140px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.5rem',
+                backgroundColor: 'white',
+                borderRadius: '8px',
+                boxShadow: i === 0 ? "0 0 0 2px var(--color-primary)" : "0 2px 4px rgba(0,0,0,0.05)"
+              }}>
+                {i === 0 && (
+                  <div style={{
+                    position: 'absolute', top: '-10px', left: '-10px',
+                    background: 'var(--color-primary)', color: 'white', padding: '4px 8px', borderRadius: '12px',
+                    fontSize: '0.7rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px',
+                    zIndex: 10, boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                  }}>
+                    <Star size={12} fill="white" /> Portada
+                  </div>
+                )}
+                <div style={{ position: 'relative', width: '100%', height: '100px', borderRadius: '4px', overflow: 'hidden' }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={item.type === 'existing' ? item.url : item.previewUrl} alt={`img-${i}`} style={{ width: "100%", height: "100%", objectFit: 'cover' }} />
+                  <button 
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); removeImage(i); }}
+                    style={{
+                      position: 'absolute', top: '4px', right: '4px',
+                      background: 'rgba(239, 68, 68, 0.9)', color: 'white', border: 'none', borderRadius: '50%', width: '24px', height: '24px',
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s'
+                    }}
+                    title="Eliminar imagen"
+                  ><X size={14} /></button>
+                </div>
+                
+                <div style={{ display: 'flex', gap: '0.5rem', width: '100%', justifyContent: 'space-between' }}>
+                  <button 
+                    type="button"
+                    disabled={i === 0}
+                    onClick={() => moveImage(i, 'left')}
+                    style={{
+                      background: i === 0 ? '#f3f4f6' : '#e5e7eb', color: i === 0 ? '#d1d5db' : '#374151', 
+                      border: 'none', borderRadius: '4px', padding: '4px', flex: 1,
+                      cursor: i === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}
+                    title="Mover a la izquierda"
+                  ><ArrowLeft size={16} /></button>
+                  <button 
+                    type="button"
+                    disabled={i === images.length - 1}
+                    onClick={() => moveImage(i, 'right')}
+                    style={{
+                      background: i === images.length - 1 ? '#f3f4f6' : '#e5e7eb', color: i === images.length - 1 ? '#d1d5db' : '#374151', 
+                      border: 'none', borderRadius: '4px', padding: '4px', flex: 1,
+                      cursor: i === images.length - 1 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}
+                    title="Mover a la derecha"
+                  ><ArrowRight size={16} /></button>
+                </div>
               </div>
             ))}
           </div>

@@ -24,6 +24,12 @@ interface PostInput {
   published?: boolean;
   seoTitle?: string | null;
   seoDescription?: string | null;
+  seoKeywords?: string | null;
+  coverImageAlt?: string | null;
+  category?: string | null;
+  authorName?: string;
+  authorImage?: string | null;
+  publishAt?: Date | null;
 }
 
 export async function createPost(data: PostInput) {
@@ -51,6 +57,12 @@ export async function createPost(data: PostInput) {
         published: data.published ?? false,
         seoTitle: data.seoTitle || data.title,
         seoDescription: data.seoDescription || "",
+        seoKeywords: data.seoKeywords || "",
+        coverImageAlt: data.coverImageAlt || "",
+        category: data.category,
+        authorName: data.authorName || "DG Audio",
+        authorImage: data.authorImage,
+        publishAt: data.publishAt,
       },
     });
 
@@ -95,6 +107,12 @@ export async function updatePost(id: string, data: Partial<PostInput>) {
         published: data.published,
         seoTitle: data.seoTitle,
         seoDescription: data.seoDescription,
+        seoKeywords: data.seoKeywords,
+        coverImageAlt: data.coverImageAlt,
+        category: data.category,
+        authorName: data.authorName,
+        authorImage: data.authorImage,
+        publishAt: data.publishAt,
       },
     });
 
