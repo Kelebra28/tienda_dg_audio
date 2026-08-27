@@ -34,19 +34,21 @@ export const Footer = () => {
         <div className="footer-col">
           <h4 className={styles.footerTitle}>Navegación</h4>
           <ul className={styles.footerLinks}>
-            <li><Link href="/">Inicio</Link></li>
+            <li><a href="/#inicio">Inicio</a></li>
+            <li><a href="/#soluciones">Soluciones</a></li>
+            <li><a href="/#marcas">Nuestras Marcas</a></li>
             <li><Link href="/tienda">Tienda</Link></li>
-            <li><Link href="/contacto">Contacto</Link></li>
+            <li><Link href="/blog">Blog DG</Link></li>
           </ul>
         </div>
         
         <div className="footer-col">
-          <h4 className={styles.footerTitle}>Tienda</h4>
+          <h4 className={styles.footerTitle}>Soluciones</h4>
           <ul className={styles.footerLinks}>
-            <li><Link href="/tienda">Todos los productos</Link></li>
-            <li><Link href="/tienda/ofertas">Ofertas especiales</Link></li>
-            <li><Link href="/carrito">Mi carrito</Link></li>
-            <li><Link href="/admin">Administración</Link></li>
+            <li><a href="/subpage/soluciones/residencial-premium.html">Audio Residencial</a></li>
+            <li><a href="/subpage/soluciones/negocios-y-experiencias.html">Audio para Negocios</a></li>
+            <li><a href="/subpage/soluciones/corporativo-e-institucional.html">Salas Corporativas</a></li>
+            <li><a href="/subpage/soluciones/eventos-y-produccion.html">Estudios y Creadores</a></li>
           </ul>
         </div>
         
