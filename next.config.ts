@@ -1,7 +1,18 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  async rewrites() {
+    return {
+      beforeFiles: [],
+      afterFiles: [],
+      fallback: [
+        {
+          source: '/:path*',
+          destination: 'https://html.dgaudiosound.com/:path*',
+        },
+      ],
+    };
+  },
 };
 
 export default nextConfig;

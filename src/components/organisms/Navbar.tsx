@@ -88,7 +88,7 @@ export const Navbar = () => {
             </li>
             <li className={styles.navItem}>
               <Link href="/tienda" className={`${styles.navLink} ${pathname.includes("/tienda") ? styles.active : ""}`}>
-                Catálogo
+                Tienda
               </Link>
             </li>
             <li className={styles.navItem}>
