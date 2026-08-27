@@ -29,6 +29,7 @@ export default async function TiendaPage() {
     <>
       {/* Landing-Matched Premium Hero Section */}
       <div 
+        className="section-dark"
         style={{ 
           paddingTop: '180px', 
           paddingBottom: '120px', 
@@ -78,7 +79,7 @@ export default async function TiendaPage() {
               backgroundColor: 'rgba(212, 164, 55, 0.03)'
             }}
           >
-            Equipos y Componentes High-End
+            Soluciones de Audio Profesional
           </div>
           
           {/* Main Title (Identical font style and structure to landing) */}
@@ -95,7 +96,7 @@ export default async function TiendaPage() {
           >
             Equipos y componentes que <br />
             <span style={{ color: '#d4a437' }}>elevan la experiencia</span> <br />
-            <span style={{ color: '#d4a437' }}>acústica de tu auto.</span>
+            <span style={{ color: '#d4a437' }}>acústica de tu negocio.</span>
           </h1>
           
           {/* Subtitle */}
@@ -109,8 +110,8 @@ export default async function TiendaPage() {
               fontFamily: 'var(--font-body)'
             }}
           >
-            Transformamos el sonido de tu vehículo en una experiencia sensorial de alta fidelidad. 
-            Diseño, integración y marcas premium líderes en car audio a tu alcance.
+            Transformamos el sonido de tu espacio en una experiencia de alta fidelidad. 
+            Diseño, integración y marcas premium para antros, restaurantes, barberías y auditorios a tu alcance.
           </p>
 
           {/* Landing-Style Pill Category Badges */}
@@ -125,8 +126,8 @@ export default async function TiendaPage() {
             }}
           >
             {[
-              { label: 'Car Audio Premium', icon: '🔊' },
-              { label: 'Accesorios de Instalación', icon: '🔌' },
+              { label: 'Audio Comercial', icon: '🔊' },
+              { label: 'Sistemas Lineales', icon: '🔈' },
               { label: 'Procesadores y DSP', icon: '🎛️' },
               { label: 'Amplificadores High-End', icon: '⚡' }
             ].map((item, idx) => (

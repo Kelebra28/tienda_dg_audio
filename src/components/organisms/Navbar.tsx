@@ -32,7 +32,7 @@ export const Navbar = () => {
     }
 
     const lightSections = document.querySelectorAll(
-      '.section-light, .section-light-alt, .section-premium-white, .trust-bar-wrapper, .brands, .solutions, .how-we-work, .contact-bubbles-section, main'
+      '.section-light, .section-light-alt, .section-premium-white, .trust-bar-wrapper, .brands, .solutions, .how-we-work, .contact-bubbles-section'
     );
     const darkSections = document.querySelectorAll(
       '.hero, .section-dark, .section-black, .section-dark-premium, .applications, .faq, .why-us, footer'
@@ -42,13 +42,13 @@ export const Navbar = () => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           if (Array.from(lightSections).includes(entry.target)) {
-            setIsNavLight(true);
-          } else if (Array.from(darkSections).includes(entry.target)) {
             setIsNavLight(false);
+          } else if (Array.from(darkSections).includes(entry.target)) {
+            setIsNavLight(true);
           }
         }
       });
-    }, { rootMargin: '-70px 0px 0px 0px', threshold: 0.01 });
+    }, { rootMargin: '-70px 0px -50% 0px', threshold: 0 });
 
     lightSections.forEach(s => observer.observe(s));
     darkSections.forEach(s => observer.observe(s));
@@ -88,7 +88,7 @@ export const Navbar = () => {
             </li>
             <li className={styles.navItem}>
               <Link href="/tienda" className={`${styles.navLink} ${pathname.includes("/tienda") ? styles.active : ""}`}>
-                Tienda
+                Catálogo
               </Link>
             </li>
             <li className={styles.navItem}>
@@ -109,7 +109,7 @@ export const Navbar = () => {
             onClick={() => setIsDrawerOpen(true)}
           >
             <ShoppingCart size={18} />
-            Carrito ({itemCount})
+            Cotización ({itemCount})
           </button>
         </nav>
         

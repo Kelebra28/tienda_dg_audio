@@ -302,7 +302,7 @@ export default function AdminProductsPage() {
   );
 
   return (
-    <div>
+    <div className="section-light" style={{ paddingTop: "100px", paddingLeft: "2rem", paddingRight: "2rem", paddingBottom: "2rem", maxWidth: "1400px", margin: "0 auto" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
         <h1 className="section-title" style={{ margin: 0, fontSize: "2rem" }}>Gestión de Productos</h1>
         

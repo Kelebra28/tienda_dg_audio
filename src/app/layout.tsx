@@ -25,7 +25,7 @@ export default function RootLayout({
             <Navbar />
             <CartDrawer />
             <Toaster position="bottom-right" />
-            <main style={{ paddingTop: "80px", minHeight: "calc(100vh - 300px)" }}>
+            <main style={{ minHeight: "calc(100vh - 300px)" }}>
               {children}
             </main>
             <Footer />

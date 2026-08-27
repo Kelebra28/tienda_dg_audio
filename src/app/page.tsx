@@ -15,14 +15,14 @@ export default async function HomePage() {
   return (
     <div>
       {/* Hero Section */}
-      <section style={{ backgroundColor: "var(--bg-secondary)", padding: "4rem 0" }}>
+      <section className="section-light" style={{ backgroundColor: "var(--bg-secondary)", paddingTop: "120px", paddingBottom: "4rem" }}>
         <div className="container" style={{ textAlign: "center" }}>
-          <span className="eyebrow">Nueva Colección</span>
+          <span className="eyebrow">Catálogo en línea</span>
           <h1 className="section-title" style={{ marginBottom: "1.5rem" }}>
-            Equipa tu auto con <span className="text-accent">Sonido Premium</span>
+            Soluciones en <span className="text-accent">Audio Profesional</span>
           </h1>
           <p style={{ color: "var(--text-muted)", maxWidth: "600px", margin: "0 auto 2rem", fontSize: "1.125rem" }}>
-            En DG Audiosound tenemos los mejores equipos, accesorios e instalaciones para llevar tu experiencia auditiva al siguiente nivel.
+            En DG Audiosound ofrecemos el mejor equipamiento en audio, iluminación y video profesional para tus proyectos y eventos.
           </p>
           <div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
             <Button variant="primary">Ver Catálogo</Button>
@@ -34,7 +34,7 @@ export default async function HomePage() {
       </section>
 
       {/* Featured Products Section */}
-      <section style={{ padding: "5rem 0" }}>
+      <section className="section-light" style={{ padding: "5rem 0" }}>
         <div className="container">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "3rem" }}>
             <div>
