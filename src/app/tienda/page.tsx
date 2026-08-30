@@ -10,7 +10,27 @@ export const metadata: Metadata = {
 const prisma = new PrismaClient();
 export const dynamic = 'force-dynamic';
 
-export default async function TiendaPage() {
+import { Suspense } from "react";
+
+// The loader to show while the catalog data is being fetched
+function CatalogLoader() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '400px', gap: '1.5rem' }}>
+      <div style={{ position: 'relative', width: '60px', height: '60px' }}>
+        <div style={{ position: 'absolute', inset: 0, border: '2px solid rgba(212, 164, 55, 0.1)', borderTopColor: '#d4a437', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+        <div style={{ position: 'absolute', inset: '15px', backgroundColor: 'rgba(212, 164, 55, 0.2)', borderRadius: '50%', animation: 'pulse 1.5s ease-in-out infinite', boxShadow: '0 0 15px rgba(212, 164, 55, 0.3)' }} />
+      </div>
+      <p style={{ color: '#d4a437', fontWeight: 600, letterSpacing: '0.05em' }}>Cargando inventario...</p>
+      <style>{`
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes pulse { 0%, 100% { transform: scale(0.8); opacity: 0.5; } 50% { transform: scale(1.1); opacity: 1; } }
+      `}</style>
+    </div>
+  );
+}
+
+// Async component that fetches data and renders the template
+async function CatalogDataFetcher() {
   const [products, categoriesRaw, brandsRaw, familiesRaw] = await Promise.all([
     prisma.product.findMany({ 
       where: { isActive: true }, 
@@ -26,6 +46,18 @@ export default async function TiendaPage() {
   const families = familiesRaw.map(f => f.family as string).sort();
 
   return (
+    <StoreTemplate 
+      products={products} 
+      categories={categories}
+      brands={brands}
+      families={families}
+    />
+  );
+}
+
+// Synchronous page component: navigates instantly
+export default function TiendaPage() {
+  return (
     <>
       {/* Landing-Matched Premium Hero Section */}
       <div 
@@ -34,7 +66,6 @@ export default async function TiendaPage() {
           paddingTop: '180px', 
           paddingBottom: '120px', 
           textAlign: 'center',
-          // High-end blurred architectural dark living room image with dark warm overlay
           backgroundImage: 'linear-gradient(to bottom, rgba(10, 11, 14, 0.78) 0%, rgba(10, 11, 14, 0.92) 100%), url("https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=1600&auto=format&fit=crop")',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
@@ -63,7 +94,6 @@ export default async function TiendaPage() {
         {/* Content Container */}
         <div className="container" style={{ position: 'relative', zIndex: 2 }}>
           
-          {/* Accent Gold Pill Badge (Exact landing match) */}
           <div 
             style={{ 
               display: 'inline-block', 
@@ -82,7 +112,6 @@ export default async function TiendaPage() {
             Soluciones de Audio Profesional
           </div>
           
-          {/* Main Title (Identical font style and structure to landing) */}
           <h1 
             style={{ 
               fontSize: '3.85rem', 
@@ -99,7 +128,6 @@ export default async function TiendaPage() {
             <span style={{ color: '#d4a437' }}>acústica de tu negocio.</span>
           </h1>
           
-          {/* Subtitle */}
           <p 
             style={{ 
               color: 'rgba(255, 255, 255, 0.75)', 
@@ -114,7 +142,6 @@ export default async function TiendaPage() {
             Diseño, integración y marcas premium para antros, restaurantes, barberías y auditorios a tu alcance.
           </p>
 
-          {/* Landing-Style Pill Category Badges */}
           <div 
             style={{ 
               display: 'flex', 
@@ -154,7 +181,6 @@ export default async function TiendaPage() {
             ))}
           </div>
 
-          {/* Action Buttons (Matched with landing style) */}
           <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
             <a 
               href="https://wa.me/525537270177?text=Hola,%20quisiera%20cotizar%20un%20proyecto" 
@@ -193,12 +219,9 @@ export default async function TiendaPage() {
 
       {/* Main Catalog Body */}
       <div id="catalogo-store" className="section-light-alt" style={{ minHeight: '100vh', paddingBottom: '4rem', paddingTop: '3rem', backgroundColor: '#f5f5f7' }}>
-        <StoreTemplate 
-          products={products} 
-          categories={categories}
-          brands={brands}
-          families={families}
-        />
+        <Suspense fallback={<CatalogLoader />}>
+          <CatalogDataFetcher />
+        </Suspense>
       </div>
     </>
   );

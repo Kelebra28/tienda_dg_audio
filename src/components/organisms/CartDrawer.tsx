@@ -54,13 +54,15 @@ export const CartDrawer = () => {
             <div className={styles.emptyState}>
               <ShoppingBag size={48} opacity={0.2} />
               <p>Tu lista está vacía.</p>
-              <button 
-                className={styles.checkoutBtn} 
-                style={{ width: 'auto', padding: '0.5rem 1.5rem', marginTop: '1rem' }}
-                onClick={() => setIsDrawerOpen(false)}
-              >
-                Ver catálogo
-              </button>
+              <Link href="/tienda" passHref style={{ textDecoration: 'none' }}>
+                <button 
+                  className={styles.checkoutBtn} 
+                  style={{ width: 'auto', padding: '0.5rem 1.5rem', marginTop: '1rem' }}
+                  onClick={() => setIsDrawerOpen(false)}
+                >
+                  Ver catálogo
+                </button>
+              </Link>
             </div>
           ) : (
             items.map((item) => (
