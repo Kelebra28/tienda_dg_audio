@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import imageCompression from 'browser-image-compression';
 
 export const useImageUpload = () => {
   const [isUploading, setIsUploading] = useState(false);
@@ -10,37 +11,36 @@ export const useImageUpload = () => {
     setError(null);
 
     try {
-      // 1. Validar tamaño en el frontend (5MB max)
       if (file.size > 5 * 1024 * 1024) {
         throw new Error("El archivo excede los 5MB permitidos");
       }
 
-      // 2. Validar formato
       const validTypes = ["image/jpeg", "image/png", "image/webp"];
       if (!validTypes.includes(file.type)) {
         throw new Error("Formato no soportado. Solo JPG, PNG o WEBP.");
       }
 
-      // 3. Preparar el FormData
-      const formData = new FormData();
-      formData.append("file", file);
+      // 1. Comprimir en el cliente usando browser-image-compression
+      const options = {
+        maxSizeMB: 0.5,
+        maxWidthOrHeight: 1200,
+        useWebWorker: true,
+        fileType: "image/webp" as any
+      };
 
-      // 4. Enviar al endpoint para procesamiento con Sharp
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
+      const compressedFile = await imageCompression(file, options);
+
+      // 2. Convertir a cadena Base64
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(compressedFile);
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = error => reject(error);
       });
 
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Error al procesar la imagen");
-      }
-
-      // 5. Retornar la cadena Base64
-      return data.base64;
+      return base64;
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Error desconocido";
+      const errorMessage = err instanceof Error ? err.message : "Error desconocido al procesar la imagen";
       setError(errorMessage);
       toast.error(errorMessage);
       return null;

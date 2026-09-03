@@ -65,6 +65,10 @@ export const Navbar = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
+  if (pathname?.startsWith("/admin")) {
+    return null;
+  }
+
   return (
     <header className={`${styles.navbar} ${isScrolled ? styles.scrolled : ""} ${isNavLight ? styles.navLight : ""}`}>
       <div className={styles.navContainer}>

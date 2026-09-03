@@ -1,10 +1,19 @@
+"use client";
+
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import styles from "./Footer.module.css";
 import { Phone, Mail, MapPin } from "lucide-react";
 
 export const Footer = () => {
+  const pathname = usePathname();
+
+  if (pathname?.startsWith("/admin")) {
+    return null;
+  }
+
   return (
     <footer className={styles.footer}>
       <div className={`container ${styles.footerContainer}`}>
