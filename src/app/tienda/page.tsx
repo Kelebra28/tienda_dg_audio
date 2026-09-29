@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: "Explora nuestro catálogo de productos de audio y accesorios premium.",
 };
 
-const prisma = new PrismaClient();
+import prisma from "@/lib/prisma";
 export const dynamic = 'force-dynamic';
 
 import { Suspense } from "react";

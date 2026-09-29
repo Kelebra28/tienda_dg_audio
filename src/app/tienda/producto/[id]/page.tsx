@@ -1,7 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { AddToCartButton } from "./AddToCartButton";
 import { ChevronRight, ShieldCheck, Truck, Headphones } from "lucide-react";
@@ -22,7 +22,6 @@ const getColorHex = (colorName: string) => {
   return '#e5e7eb'; // default grey
 }
 
-const prisma = new PrismaClient();
 export const dynamic = 'force-dynamic';
 
 interface Props {
